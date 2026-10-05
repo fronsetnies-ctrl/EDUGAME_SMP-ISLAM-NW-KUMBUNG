@@ -1,0 +1,2347 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EduPlay Arcade 12-in-1 - Platform Game Pembelajaran Interaktif</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Tone.js for Synthesized Interactive Audio -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+
+  <!-- Canvas Confetti for Celebrations -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <!-- Google Fonts: Plus Jakarta Sans, Fredoka & Orbitron -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Orbitron:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: radial-gradient(circle at 50% 10%, #0f172a 0%, #020617 100%);
+      min-height: 100vh;
+      color: #f8fafc;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .font-game { font-family: 'Fredoka', cursive, sans-serif; }
+    .font-display { font-family: 'Orbitron', monospace, sans-serif; }
+
+    /* Custom 3D Card Flip for Flashcards */
+    .perspective-1000 { perspective: 1000px; }
+    .transform-style-3d { transform-style: preserve-3d; }
+    .backface-hidden { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+    .rotate-y-180 { transform: rotateY(180deg); }
+
+    /* Custom animations */
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 15px rgba(99, 102, 241, 0.3); }
+      50% { box-shadow: 0 0 30px rgba(99, 102, 241, 0.65); }
+    }
+    .animate-glow { animation: pulse-glow 2s infinite ease-in-out; }
+
+    .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scroll::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); border-radius: 999px; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 999px; }
+    .custom-scroll::-webkit-scrollbar-thumb:hover { background: #475569; }
+  </style>
+</head>
+<body class="flex flex-col min-h-screen text-slate-100 overflow-x-hidden">
+
+  <!-- Header & Status Bar -->
+  <header class="w-full bg-slate-950/90 backdrop-blur-md border-b border-indigo-500/20 sticky top-0 z-50 px-4 py-3 shadow-xl">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      
+      <!-- Brand Logo & Title -->
+      <div class="flex items-center gap-3 cursor-pointer group" onclick="gameHub.openMainMenu()">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-400 via-indigo-600 to-cyan-400 p-[2px] shadow-lg group-hover:scale-105 transition transform">
+          <div class="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center text-xl">
+            🎮
+          </div>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-xl font-game font-bold tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-cyan-300 to-indigo-300">
+              EDUPLAY ARCADE 12-IN-1
+            </h1>
+            <span id="activeGameTag" class="bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full hidden sm:inline-block">MENU UTAMA</span>
+            <span id="activeGradeTag" class="bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full hidden sm:inline-block">SEMUA JENJANG</span>
+          </div>
+          <p class="text-[11px] text-slate-400 -mt-0.5 hidden sm:block">
+            12 Mode Pembelajaran Interaktif • <span class="text-amber-300 font-semibold">Dev: RAHMAT GUFRON TSANI, S.Pd., MCE.</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- Action Nav Buttons -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <!-- Overall XP Badge -->
+        <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-amber-400 shadow-inner">
+          <span>⚡</span> <span id="hubTotalXp">0 XP</span>
+        </div>
+
+        <!-- Sound FX Toggle -->
+        <button id="soundToggleBtn" onclick="gameHub.toggleAudio()" class="p-2 sm:px-3 sm:py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 text-xs font-semibold transition active:scale-95 flex items-center gap-1.5" title="Aktif/Nonaktifkan Suara">
+          <span id="soundIcon">🔊</span> <span class="hidden sm:inline">Suara</span>
+        </button>
+
+        <!-- Home / Menu Button -->
+        <button onclick="gameHub.openMainMenu()" class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold text-xs sm:text-sm shadow-md transition active:scale-95 flex items-center gap-1.5">
+          <span>🏠</span> <span>Menu Utama</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 flex flex-col relative">
+
+    <!-- ======================================================== -->
+    <!-- VIEW 0: MAIN DASHBOARD MENU (12 GAME TILES)              -->
+    <!-- ======================================================== -->
+    <section id="view-hub" class="w-full space-y-6 my-auto">
+      
+      <!-- Banner Introduction -->
+      <div class="text-center space-y-2 py-4">
+        <div class="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-bold mb-1">
+          <span>✨</span> Pusat Game Edukasi Interaktif Terpadu
+        </div>
+        <h2 class="text-3xl sm:text-5xl font-game font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-sky-300 to-indigo-300">
+          Pilih Mode Permainan Pembelajaran
+        </h2>
+        <p class="text-slate-400 text-xs sm:text-sm max-w-2xl mx-auto">
+          Tersedia 12 inovasi permainan edukasi untuk pemanasan kelas, asesmen cepat, penalaran logika, pemecahan masalah sains, hingga kerja sama tim!
+        </p>
+        <div class="pt-1">
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-900/80 border border-amber-500/30 text-xs text-slate-300">
+            👨‍💻 Dikembangkan oleh: <strong class="text-amber-300 font-semibold tracking-wide">RAHMAT GUFRON TSANI, S.Pd., MCE.</strong>
+          </span>
+        </div>
+
+        <!-- Selector Jenjang Kelas (MI, SD, SMP, SMA/SMK) -->
+        <div class="pt-3 flex flex-wrap items-center justify-center gap-2">
+          <span class="text-xs font-bold text-slate-300 mr-1">Tingkat Jenjang:</span>
+          <button id="gradeBtn-all" onclick="gameHub.setGrade('all')" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition shadow border border-amber-400 bg-amber-500 text-slate-950">
+            🌟 Semua Jenjang
+          </button>
+          <button id="gradeBtn-sd" onclick="gameHub.setGrade('sd')" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition shadow border border-slate-700 bg-slate-900 text-slate-300 hover:border-emerald-400 hover:text-emerald-300">
+            🎒 MI / SD
+          </button>
+          <button id="gradeBtn-smp" onclick="gameHub.setGrade('smp')" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition shadow border border-slate-700 bg-slate-900 text-slate-300 hover:border-cyan-400 hover:text-cyan-300">
+            🏫 SMP / MTs
+          </button>
+          <button id="gradeBtn-smk" onclick="gameHub.setGrade('smk')" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition shadow border border-slate-700 bg-slate-900 text-slate-300 hover:border-violet-400 hover:text-violet-300">
+            🎓 SMA / SMK
+          </button>
+        </div>
+      </div>
+
+      <!-- 12 Game Cards Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="gamesCardsContainer">
+        
+        <!-- Game: Benar atau Salah -->
+        <div onclick="gameHub.launchGame('truefalse')" class="group p-5 rounded-3xl bg-slate-900/90 border border-emerald-500/30 hover:border-emerald-400/80 transition-all duration-300 hover:-translate-y-1.5 cursor-pointer shadow-xl relative overflow-hidden flex flex-col justify-between">
+          <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-emerald-500/10 rounded-full blur-xl group-hover:bg-emerald-500/20 transition"></div>
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-2xl group-hover:scale-110 transition">⚡</span>
+              <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500/40">Asesmen Cepat</span>
+            </div>
+            <h3 class="font-game font-bold text-lg text-white group-hover:text-emerald-300 transition">Benar atau Salah</h3>
+            <p class="text-slate-400 text-xs mt-1 leading-relaxed">Pemanasan & asesmen cepat memilih kebenaran fakta materi sains, sejarah, dan umum.</p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-emerald-400 font-bold">
+            <span>Mulai Bermain</span> <span>➔</span>
+          </div>
+        </div>
+
+        <!-- Game: Susun Kata -->
+        <div onclick="gameHub.launchGame('wordscramble')" class="group p-5 rounded-3xl bg-slate-900/90 border border-cyan-500/30 hover:border-cyan-400/80 transition-all duration-300 hover:-translate-y-1.5 cursor-pointer shadow-xl relative overflow-hidden flex flex-col justify-between">
+          <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-cyan-500/10 rounded-full blur-xl group-hover:bg-cyan-500/20 transition"></div>
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="w-12 h-12 rounded-2xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-2xl group-hover:scale-110 transition">🔤</span>
+              <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-500/40">Kosakata</span>
+            </div>
+            <h3 class="font-game font-bold text-lg text-white group-hover:text-cyan-300 transition">Susun Kata</h3>
+            <p class="text-slate-400 text-xs mt-1 leading-relaxed">Merangkai kepingan huruf acak menjadi istilah ilmiah dan kosakata materi pelajaran yang tepat.</p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-cyan-400 font-bold">
+            <span>Mulai Bermain</span> <span>➔</span>
+          </div>
+        </div>
+
+        <!-- Game: Math Puzzle -->
+        <div onclick="gameHub.launchGame('mathpuzzle')" class="group p-5 rounded-3xl bg-slate-900/90 border border-amber-500/30 hover:border-amber-400/80 transition-all duration-300 hover:-translate-y-1.5 cursor-pointer shadow-xl relative overflow-hidden flex flex-col justify-between">
+          <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-amber-500/10 rounded-full blur-xl group-hover:bg-amber-500/20 transition"></div>
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-2xl group-hover:scale-110 transition">🧩</span>
+              <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-950 text-amber-300 border border-amber-500/40">Logika Hitung</span>
+            </div>
+            <h3 class="font-game font-bold text-lg text-white group-hover:text-amber-300 transition">Math Puzzle</h3>
+            <p class="text-slate-400 text-xs mt-1 leading-relaxed">Menyelesaikan persamaan hitung teka-teki logika kilat untuk membuka brankas nilai tertinggi.</p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-amber-400 font-bold">
+            <span>Mulai Bermain</span> <span>➔</span>
+          </div>
+        </div>
+
+        <!-- Game: Tebak Gambar -->
+        <div onclick="gameHub.launchGame('guessimage')" class="group p-5 rounded-3xl bg-slate-900/90 border border-rose-500/30 hover:border-rose-400/80 transition-all duration-300 hover:-translate-y-1.5 cursor-pointer shadow-xl relative overflow-hidden flex flex-col justify-between">
+          <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-rose-500/10 rounded-full blur-xl group-hover:bg-rose-500/20 transition"></div>
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="w-12 h-12 rounded-2xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-2xl group-hover:scale-110 transition">🖼️</span>
+              <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-rose-950 text-rose-300 border border-rose-500/40">Visual Sains</span>
+            </div>
+            <h3 class="font-game font-bold text-lg text-white group-hover:text-rose-300 transition">Tebak Gambar</h3>
+            <p class="text-slate-400 text-xs mt-1 leading-relaxed">Identifikasi ilustrasi organ tubuh manusia, bangunan bersejarah, dan alat sains dengan akurat.</p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-rose-400 font-bold">
+            <span>Mulai Bermain</span> <span>➔</span>
+          </div>
+        </div>
+
+        <!-- Game: Sortir Kategori -->
+        <div onclick="gameHub.launchGame('sortcategory')" class="group p-5 rounded-3xl bg-slate-900/90 border border-indigo-500/30 hover:border-indigo-400/80 transition-all duration-300 hover:-translate-y-1.5 cursor-pointer shadow-xl relative overflow-hidden flex flex-col justify-between">
+          <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-indigo-500/10 rounded-full blur-xl group-hover:bg-indigo-500/20 transition"></div>
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="w-12 h-12 rounded-2xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-2xl group-hover:scale-110 transition">🗂️</span>
+              <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-500/40">Klasifikasi</span>
+            </div>
+            <h3 class="font-game font-bold text-lg text-white group-hover:text-indigo-300 transition">Sortir Kategori</h3>
+            <p class="text-slate-400 text-xs mt-1 leading-relaxed">Kelompokkan elemen ke kotak klasifikasi yang tepat (Hewan/Tumbuhan, Padat/Cair/Gas, Energi).</p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-indigo-400 font-bold">
+            <span>Mulai Bermain</span> <span>➔</span>
+          </div>
+        </div>
+
+        <!-- Game: Roda Keberuntungan -->
+        <div onclick="gameHub.launchGame('spinwheel')" class="group p-5 rounded-3xl bg-slate-900/90 border border-fuchsia-500/30 hover:border-fuchsia-400/80 transition-all duration-300 hover:-translate-y-1.5 cursor-pointer shadow-xl relative overflow-hidden flex flex-col justify-between">
+          <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-fuchsia-500/10 rounded-full blur-xl group-hover:bg-fuchsia-500/20 transition"></div>
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="w-12 h-12 rounded-2xl bg-fuchsia-500/20 border border-fuchsia-500/40 flex items-center justify-center text-2xl group-hover:scale-110 transition">🎡</span>
+              <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-fuchsia-950 text-fuchsia-300 border border-fuchsia-500/40">Tantangan Acak</span>
+            </div>
+            <h3 class="font-game font-bold text-lg text-white group-hover:text-fuchsia-300 transition">Roda Keberuntungan</h3>
+            <p class="text-slate-400 text-xs mt-1 leading-relaxed">Putar roda interaktif untuk menentukan kategori tantangan acak dan menangkan poin berlipat!</p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-fuchsia-400 font-bold">
+            <span>Mulai Bermain</span> <span>➔</span>
+          </div>
+        </div>
+
+        <!-- Game: Susun Kronologi -->
+        <div onclick="gameHub.launchGame('timeline')" class="group p-5 rounded-3xl bg-slate-900/90 border border-violet-500/30 hover:border-violet-400/80 transition-all duration-300 hover:-translate-y-1.5 cursor-pointer shadow-xl relative overflow-hidden flex flex-col justify-between">
+          <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-violet-500/10 rounded-full blur-xl group-hover:bg-violet-500/20 transition"></div>
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="w-12 h-12 rounded-2xl bg-violet-500/20 border border-violet-500/40 flex items-center justify-center text-2xl group-hover:scale-110 transition">⏳</span>
+              <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-violet-950 text-violet-300 border border-violet-500/40">Linimasa</span>
+            </div>
+            <h3 class="font-game font-bold text-lg text-white group-hover:text-violet-300 transition">Susun Kronologi</h3>
+            <p class="text-slate-400 text-xs mt-1 leading-relaxed">Urutkan rentetan linimasa peristiwa sejarah, tahapan eksperimen, dan siklus biologi.</p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-violet-400 font-bold">
+            <span>Mulai Bermain</span> <span>➔</span>
+          </div>
+        </div>
+
+        <!-- Game: Virtual Lab -->
+        <div onclick="gameHub.launchGame('virtuallab')" class="group p-5 rounded-3xl bg-slate-900/90 border border-teal-500/30 hover:border-teal-400/80 transition-all duration-300 hover:-translate-y-1.5 cursor-pointer shadow-xl relative overflow-hidden flex flex-col justify-between">
+          <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-teal-500/10 rounded-full blur-xl group-hover:bg-teal-500/20 transition"></div>
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="w-12 h-12 rounded-2xl bg-teal-500/20 border border-teal-500/40 flex items-center justify-center text-2xl group-hover:scale-110 transition">🔬</span>
+              <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-teal-950 text-teal-300 border border-teal-500/40">Simulasi Lab</span>
+            </div>
+            <h3 class="font-game font-bold text-lg text-white group-hover:text-teal-300 transition">Virtual Lab</h3>
+            <p class="text-slate-400 text-xs mt-1 leading-relaxed">Laboratorium sains simulasi rangkaian listrik real-time (baterai, sakelar, kabel, lampu, Hukum Ohm).</p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-teal-400 font-bold">
+            <span>Mulai Bermain</span> <span>➔</span>
+          </div>
+        </div>
+
+        <!-- Game: Team Challenge -->
+        <div onclick="gameHub.launchGame('teamchallenge')" class="group p-5 rounded-3xl bg-slate-900/90 border border-orange-500/30 hover:border-orange-400/80 transition-all duration-300 hover:-translate-y-1.5 cursor-pointer shadow-xl relative overflow-hidden flex flex-col justify-between">
+          <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-orange-500/10 rounded-full blur-xl group-hover:bg-orange-500/20 transition"></div>
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="w-12 h-12 rounded-2xl bg-orange-500/20 border border-orange-500/40 flex items-center justify-center text-2xl group-hover:scale-110 transition">🏆</span>
+              <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-orange-950 text-orange-300 border border-orange-500/40">Adu Tim</span>
+            </div>
+            <h3 class="font-game font-bold text-lg text-white group-hover:text-orange-300 transition">Team Challenge</h3>
+            <p class="text-slate-400 text-xs mt-1 leading-relaxed">Pertarungan antartim (Merah, Biru, Hijau, Kuning) mengumpulkan skor dengan sistem bel buzzer kuis.</p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-orange-400 font-bold">
+            <span>Mulai Bermain</span> <span>➔</span>
+          </div>
+        </div>
+
+        <!-- Game: Tebak Istilah -->
+        <div onclick="gameHub.launchGame('guessclue')" class="group p-5 rounded-3xl bg-slate-900/90 border border-yellow-500/30 hover:border-yellow-400/80 transition-all duration-300 hover:-translate-y-1.5 cursor-pointer shadow-xl relative overflow-hidden flex flex-col justify-between">
+          <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-yellow-500/10 rounded-full blur-xl group-hover:bg-yellow-500/20 transition"></div>
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="w-12 h-12 rounded-2xl bg-yellow-500/20 border border-yellow-500/40 flex items-center justify-center text-2xl group-hover:scale-110 transition">💡</span>
+              <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-yellow-950 text-yellow-300 border border-yellow-500/40">Teka-Teki</span>
+            </div>
+            <h3 class="font-game font-bold text-lg text-white group-hover:text-yellow-300 transition">Tebak Istilah</h3>
+            <p class="text-slate-400 text-xs mt-1 leading-relaxed">Pecahkan konsep tersembunyi lewat 3 petunjuk bertahap (skor lebih tinggi jika menebak lebih awal!).</p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-yellow-400 font-bold">
+            <span>Mulai Bermain</span> <span>➔</span>
+          </div>
+        </div>
+
+        <!-- Game: Story Choice -->
+        <div onclick="gameHub.launchGame('storychoice')" class="group p-5 rounded-3xl bg-slate-900/90 border border-pink-500/30 hover:border-pink-400/80 transition-all duration-300 hover:-translate-y-1.5 cursor-pointer shadow-xl relative overflow-hidden flex flex-col justify-between">
+          <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-pink-500/10 rounded-full blur-xl group-hover:bg-pink-500/20 transition"></div>
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="w-12 h-12 rounded-2xl bg-pink-500/20 border border-pink-500/40 flex items-center justify-center text-2xl group-hover:scale-110 transition">📜</span>
+              <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-pink-950 text-pink-300 border border-pink-500/40">Petualangan</span>
+            </div>
+            <h3 class="font-game font-bold text-lg text-white group-hover:text-pink-300 transition">Story Choice</h3>
+            <p class="text-slate-400 text-xs mt-1 leading-relaxed">Petualangan interaktif bercabang di mana setiap keputusan siswa menentukan akhir cerita ekspedisi.</p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-pink-400 font-bold">
+            <span>Mulai Bermain</span> <span>➔</span>
+          </div>
+        </div>
+
+        <!-- Game: Flashcard Master -->
+        <div onclick="gameHub.launchGame('flashcards')" class="group p-5 rounded-3xl bg-slate-900/90 border border-blue-500/30 hover:border-blue-400/80 transition-all duration-300 hover:-translate-y-1.5 cursor-pointer shadow-xl relative overflow-hidden flex flex-col justify-between">
+          <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-blue-500/10 rounded-full blur-xl group-hover:bg-blue-500/20 transition"></div>
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="w-12 h-12 rounded-2xl bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-2xl group-hover:scale-110 transition">🃏</span>
+              <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-blue-950 text-blue-300 border border-blue-500/40">Kartu Belajar</span>
+            </div>
+            <h3 class="font-game font-bold text-lg text-white group-hover:text-blue-300 transition">Flashcard Master</h3>
+            <p class="text-slate-400 text-xs mt-1 leading-relaxed">Kartu hafalan 3D interaktif dengan metode pengulangan bertarget (Paham vs Perlu Latihan).</p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-blue-400 font-bold">
+            <span>Mulai Bermain</span> <span>➔</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ======================================================== -->
+    <!-- VIEW CONTAINER FOR ACTIVE GAMEPLAY                       -->
+    <!-- ======================================================== -->
+    <div id="gameplayContainer" class="hidden w-full flex-1 flex flex-col">
+      
+      <!-- GAME 9: BENAR ATAU SALAH -->
+      <section id="game-truefalse" class="hidden max-w-2xl mx-auto my-auto w-full space-y-5">
+        <div class="bg-slate-900/90 border border-emerald-500/30 p-6 rounded-3xl shadow-2xl backdrop-blur-md space-y-5 text-center">
+          <div class="flex items-center justify-between text-xs text-slate-400 border-b border-slate-800 pb-3">
+            <span class="font-bold text-emerald-400">⚡ Benar atau Salah</span>
+            <span id="tfProgress">Soal 1 / 5</span>
+            <span id="tfScore" class="font-game font-bold text-amber-300">Skor: 0</span>
+          </div>
+
+          <div class="py-6 px-4 bg-slate-950/70 border border-slate-800 rounded-2xl min-h-[140px] flex items-center justify-center">
+            <h3 id="tfQuestionText" class="text-lg sm:text-xl font-bold text-white leading-relaxed">
+              Memuat pernyataan...
+            </h3>
+          </div>
+
+          <!-- True or False Big Dual Buttons -->
+          <div class="grid grid-cols-2 gap-4">
+            <button onclick="gameHub.answerTrueFalse(true)" class="py-4 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-game font-bold text-lg shadow-lg shadow-emerald-600/30 transition flex items-center justify-center gap-2">
+              <span>✔️</span> <span>BENAR</span>
+            </button>
+            <button onclick="gameHub.answerTrueFalse(false)" class="py-4 px-6 rounded-2xl bg-rose-600 hover:bg-rose-500 active:scale-95 text-white font-game font-bold text-lg shadow-lg shadow-rose-600/30 transition flex items-center justify-center gap-2">
+              <span>❌</span> <span>SALAH</span>
+            </button>
+          </div>
+
+          <p id="tfExplanation" class="text-xs text-slate-400 italic min-h-[24px]"></p>
+        </div>
+      </section>
+
+      <!-- GAME 10: SUSUN KATA -->
+      <section id="game-wordscramble" class="hidden max-w-2xl mx-auto my-auto w-full space-y-5">
+        <div class="bg-slate-900/90 border border-cyan-500/30 p-6 rounded-3xl shadow-2xl backdrop-blur-md space-y-5 text-center">
+          <div class="flex items-center justify-between text-xs text-slate-400 border-b border-slate-800 pb-3">
+            <span class="font-bold text-cyan-400">🔤 Susun Kata</span>
+            <span id="wsProgress">Kata 1 / 5</span>
+            <span id="wsScore" class="font-game font-bold text-amber-300">Skor: 0</span>
+          </div>
+
+          <!-- Hint category -->
+          <div class="text-xs font-semibold text-cyan-300 bg-cyan-950/60 border border-cyan-500/30 py-1.5 px-3 rounded-full inline-block">
+            Petunjuk: <span id="wsClueText">Proses pembuatan makanan oleh tumbuhan hijau</span>
+          </div>
+
+          <!-- Target Slots -->
+          <div class="flex flex-wrap items-center justify-center gap-2 py-4 min-h-[70px]" id="wsAnswerSlots">
+            <!-- Dynamic answer letters -->
+          </div>
+
+          <!-- Scrambled Tile Bank -->
+          <div class="flex flex-wrap items-center justify-center gap-2 pt-2" id="wsScrambleTiles">
+            <!-- Dynamic scrambled buttons -->
+          </div>
+
+          <!-- Actions -->
+          <div class="flex justify-center gap-3 pt-2">
+            <button onclick="gameHub.clearWordScramble()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300 transition">
+              Hapus Semua
+            </button>
+            <button onclick="gameHub.checkWordScramble()" class="px-6 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 font-bold text-xs text-white shadow transition active:scale-95">
+              Periksa Kata
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- GAME 11: MATH PUZZLE -->
+      <section id="game-mathpuzzle" class="hidden max-w-2xl mx-auto my-auto w-full space-y-5">
+        <div class="bg-slate-900/90 border border-amber-500/30 p-6 rounded-3xl shadow-2xl backdrop-blur-md space-y-5 text-center">
+          <div class="flex items-center justify-between text-xs text-slate-400 border-b border-slate-800 pb-3">
+            <span class="font-bold text-amber-400">🧩 Math Puzzle Logika</span>
+            <span id="mpLevelText">Teka-teki 1 / 5</span>
+            <span id="mpScore" class="font-game font-bold text-amber-300">Skor: 0</span>
+          </div>
+
+          <div class="p-6 bg-slate-950/70 border border-slate-800 rounded-2xl">
+            <span class="text-xs text-amber-400 font-bold uppercase tracking-wider block mb-2">Cari Angka Pengganti Tanda Tanya (?)</span>
+            <div id="mpEquationBox" class="font-display font-black text-2xl sm:text-3xl text-white tracking-widest my-2">
+              (12 × 4) - ? = 35
+            </div>
+            <p id="mpHint" class="text-xs text-slate-400 mt-2">Hitung hasil perkalian terlebih dahulu!</p>
+          </div>
+
+          <!-- 4 Multiple Choice Options -->
+          <div class="grid grid-cols-2 gap-3" id="mpOptionsGrid">
+            <!-- Dynamic Buttons -->
+          </div>
+        </div>
+      </section>
+
+      <!-- GAME 12: TEBAK GAMBAR -->
+      <section id="game-guessimage" class="hidden max-w-2xl mx-auto my-auto w-full space-y-5">
+        <div class="bg-slate-900/90 border border-rose-500/30 p-6 rounded-3xl shadow-2xl backdrop-blur-md space-y-5 text-center">
+          <div class="flex items-center justify-between text-xs text-slate-400 border-b border-slate-800 pb-3">
+            <span class="font-bold text-rose-400">🖼️ Tebak Gambar Edukasi</span>
+            <span id="giProgress">Gambar 1 / 5</span>
+            <span id="giScore" class="font-game font-bold text-amber-300">Skor: 0</span>
+          </div>
+
+          <!-- Interactive High-Fidelity SVG Graphic Display -->
+          <div class="w-full h-44 sm:h-52 bg-slate-950/80 border border-slate-800 rounded-2xl flex items-center justify-center p-3 relative overflow-hidden" id="giSvgContainer">
+            <!-- Injected dynamic SVG illustration -->
+          </div>
+
+          <h3 id="giQuestionClue" class="text-sm sm:text-base font-bold text-white">
+            Objek apakah yang ditunjukkan pada ilustrasi di atas?
+          </h3>
+
+          <div class="grid grid-cols-2 gap-3" id="giOptionsGrid">
+            <!-- Dynamic Choice Buttons -->
+          </div>
+        </div>
+      </section>
+
+      <!-- GAME 13: SORTIR KATEGORI -->
+      <section id="game-sortcategory" class="hidden max-w-3xl mx-auto my-auto w-full space-y-5">
+        <div class="bg-slate-900/90 border border-indigo-500/30 p-6 rounded-3xl shadow-2xl backdrop-blur-md space-y-4">
+          <div class="flex items-center justify-between text-xs text-slate-400 border-b border-slate-800 pb-3">
+            <span class="font-bold text-indigo-400">🗂️ Sortir & Klasifikasi Kategori</span>
+            <span id="scProgress">Putaran 1 / 3</span>
+            <span id="scScore" class="font-game font-bold text-amber-300">Skor: 0</span>
+          </div>
+
+          <p class="text-xs text-slate-300 text-center">
+            Pilih item di bawah, lalu klik kotak kategori yang sesuai untuk menyortirnya!
+          </p>
+
+          <!-- Current Active Item to Sort -->
+          <div class="p-4 bg-slate-950/80 border-2 border-indigo-500/40 rounded-2xl text-center flex flex-col items-center justify-center gap-1 shadow-inner">
+            <span class="text-xs text-slate-400 uppercase tracking-widest font-bold">Item Yang Harus Disortir:</span>
+            <div id="scCurrentItem" class="text-xl sm:text-2xl font-game font-bold text-amber-300">
+              🦁 Singa
+            </div>
+            <span id="scRemainingCount" class="text-[11px] text-slate-400">Sisa 6 item lagi</span>
+          </div>
+
+          <!-- Category Buckets / Bins -->
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3" id="scBinsContainer">
+            <!-- Dynamic category bins -->
+          </div>
+        </div>
+      </section>
+
+      <!-- GAME 14: RODA KEBERUNTUNGAN -->
+      <section id="game-spinwheel" class="hidden max-w-2xl mx-auto my-auto w-full space-y-5">
+        <div class="bg-slate-900/90 border border-fuchsia-500/30 p-6 rounded-3xl shadow-2xl backdrop-blur-md space-y-5 text-center">
+          <div class="flex items-center justify-between text-xs text-slate-400 border-b border-slate-800 pb-3">
+            <span class="font-bold text-fuchsia-400">🎡 Roda Keberuntungan Soal</span>
+            <span id="swScore" class="font-game font-bold text-amber-300">Skor: 0</span>
+          </div>
+
+          <!-- Canvas Wheel -->
+          <div class="relative w-64 h-64 mx-auto flex items-center justify-center">
+            <!-- Indicator Needle -->
+            <div class="absolute -top-3 left-1/2 -translate-x-1/2 z-20 text-3xl drop-shadow-md text-amber-400">
+              ▼
+            </div>
+            <canvas id="wheelCanvas" width="260" height="260" class="rounded-full shadow-2xl"></canvas>
+          </div>
+
+          <!-- Spin Action Button -->
+          <button id="swSpinBtn" onclick="gameHub.spinTheWheel()" class="px-8 py-3 rounded-2xl bg-gradient-to-r from-fuchsia-600 to-pink-600 hover:from-fuchsia-500 hover:to-pink-500 text-white font-game font-bold text-base shadow-xl shadow-fuchsia-600/30 transition transform active:scale-95">
+            PUTAR RODA SEKARANG! 🎯
+          </button>
+
+          <!-- Resulting Challenge Card (Modal style) -->
+          <div id="swQuestionBox" class="hidden p-4 rounded-2xl bg-slate-950 border border-fuchsia-500/40 text-left space-y-3">
+            <div class="flex items-center justify-between text-xs">
+              <span id="swCategoryBadge" class="px-2 py-0.5 rounded-full font-bold bg-fuchsia-950 text-fuchsia-300 border border-fuchsia-500/30">Kategori Sains</span>
+              <span class="text-amber-400 font-bold">+100 Poin</span>
+            </div>
+            <p id="swQuestionText" class="text-sm font-semibold text-white">Pertanyaan dari roda keberuntungan...</p>
+            <div class="grid grid-cols-2 gap-2" id="swOptionsGrid"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- GAME 15: SUSUN KRONOLOGI -->
+      <section id="game-timeline" class="hidden max-w-2xl mx-auto my-auto w-full space-y-5">
+        <div class="bg-slate-900/90 border border-violet-500/30 p-6 rounded-3xl shadow-2xl backdrop-blur-md space-y-5 text-center">
+          <div class="flex items-center justify-between text-xs text-slate-400 border-b border-slate-800 pb-3">
+            <span class="font-bold text-violet-400">⏳ Susun Kronologi & Tahapan</span>
+            <span id="tlProgress">Tahap 1 / 3</span>
+            <span id="tlScore" class="font-game font-bold text-amber-300">Skor: 0</span>
+          </div>
+
+          <div>
+            <h3 id="tlTopicTitle" class="text-base sm:text-lg font-bold text-white">
+              Urutkan Tahapan Metamorfosis Kupu-Kupu dari Awal ke Akhir!
+            </h3>
+            <p class="text-xs text-slate-400 mt-1">Gunakan tombol panah Naik (▲) dan Turun (▼) untuk menyusun urutan yang benar.</p>
+          </div>
+
+          <!-- Timeline Items List -->
+          <div class="space-y-2 text-left" id="tlItemsList">
+            <!-- Dynamic ordered item rows with Up/Down buttons -->
+          </div>
+
+          <div class="pt-2">
+            <button onclick="gameHub.checkTimelineOrder()" class="w-full py-3 rounded-2xl bg-violet-600 hover:bg-violet-500 font-bold text-sm text-white shadow-lg shadow-violet-600/30 transition active:scale-95">
+              Periksa Urutan Kronologi 🔍
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- GAME 16: VIRTUAL LAB (RANGKAIAN LISTRIK INTERAKTIF) -->
+      <section id="game-virtuallab" class="hidden max-w-3xl mx-auto my-auto w-full space-y-5">
+        <div class="bg-slate-900/90 border border-teal-500/30 p-6 rounded-3xl shadow-2xl backdrop-blur-md space-y-5">
+          <div class="flex items-center justify-between text-xs text-slate-400 border-b border-slate-800 pb-3">
+            <span class="font-bold text-teal-400">🔬 Virtual Lab: Simulasi Rangkaian Listrik</span>
+            <span class="text-slate-300 font-mono">Hukum Ohm: I = V / R</span>
+          </div>
+
+          <!-- Simulation Interactive Stage -->
+          <div class="p-6 bg-slate-950/80 border border-slate-800 rounded-2xl relative overflow-hidden flex flex-col items-center justify-center min-h-[220px]">
+            <!-- Visual Circuit Display -->
+            <div class="flex items-center justify-around w-full max-w-md py-4">
+              <!-- Battery Component -->
+              <div class="flex flex-col items-center gap-1">
+                <span class="text-4xl">🔋</span>
+                <span class="text-xs font-bold text-amber-400" id="labVoltText">9.0 V</span>
+                <span class="text-[10px] text-slate-400">Sumber Tegangan</span>
+              </div>
+
+              <!-- Connecting Wire -->
+              <div class="h-1 flex-1 bg-teal-500/60 mx-2 relative overflow-hidden rounded">
+                <div id="labCurrentElectrons" class="h-full bg-teal-300 w-1/3 animate-pulse"></div>
+              </div>
+
+              <!-- Switch Component -->
+              <button onclick="gameHub.toggleLabSwitch()" class="flex flex-col items-center gap-1 p-2 rounded-xl bg-slate-900 border border-slate-700 hover:border-teal-400 transition" title="Klik untuk Buka/Tutup Sakelar">
+                <span id="labSwitchIcon" class="text-3xl">🔌</span>
+                <span id="labSwitchStatus" class="text-[10px] font-bold text-rose-400">TERTUTUP (OFF)</span>
+              </button>
+
+              <!-- Connecting Wire -->
+              <div class="h-1 flex-1 bg-teal-500/60 mx-2 relative overflow-hidden rounded"></div>
+
+              <!-- Light Bulb Component -->
+              <div class="flex flex-col items-center gap-1">
+                <div id="labBulbGlow" class="w-16 h-16 rounded-full flex items-center justify-center text-4xl transition-all duration-300 bg-slate-900 border border-slate-700">
+                  💡
+                </div>
+                <span id="labBulbStatus" class="text-[10px] font-bold text-slate-400">Padam</span>
+              </div>
+            </div>
+
+            <!-- Digital Multimeter Output Readout -->
+            <div class="grid grid-cols-3 gap-2 w-full max-w-md bg-slate-900/90 p-3 rounded-xl border border-slate-800 text-center text-xs mt-3">
+              <div>
+                <span class="text-[10px] text-slate-400 block">Tegangan (V)</span>
+                <span id="meterVolt" class="font-mono font-bold text-cyan-300">9.0 V</span>
+              </div>
+              <div>
+                <span class="text-[10px] text-slate-400 block">Hambatan (R)</span>
+                <span id="meterRes" class="font-mono font-bold text-amber-300">10 Ω</span>
+              </div>
+              <div>
+                <span class="text-[10px] text-slate-400 block">Kuat Arus (I)</span>
+                <span id="meterCurrent" class="font-mono font-bold text-emerald-400">0.00 A</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Controls: Sliders for Voltage and Resistance -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800 space-y-1.5">
+              <div class="flex justify-between font-semibold">
+                <span class="text-slate-300">Tegangan Baterai (Voltage)</span>
+                <span id="voltSliderVal" class="text-cyan-400 font-mono">9 V</span>
+              </div>
+              <input type="range" id="labVoltSlider" min="1" max="24" step="1" value="9" oninput="gameHub.updateLabPhysics()" class="w-full accent-cyan-500 cursor-pointer">
+            </div>
+
+            <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800 space-y-1.5">
+              <div class="flex justify-between font-semibold">
+                <span class="text-slate-300">Hambatan Lampu (Resistance)</span>
+                <span id="resSliderVal" class="text-amber-400 font-mono">10 Ω</span>
+              </div>
+              <input type="range" id="labResSlider" min="2" max="50" step="2" value="10" oninput="gameHub.updateLabPhysics()" class="w-full accent-amber-500 cursor-pointer">
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- GAME 17: TEAM CHALLENGE -->
+      <section id="game-teamchallenge" class="hidden max-w-3xl mx-auto my-auto w-full space-y-5">
+        <div class="bg-slate-900/90 border border-orange-500/30 p-6 rounded-3xl shadow-2xl backdrop-blur-md space-y-5">
+          <div class="flex items-center justify-between text-xs text-slate-400 border-b border-slate-800 pb-3">
+            <span class="font-bold text-orange-400">🏆 Team Challenge (Adu Poin Antartim)</span>
+            <span id="tcRoundText">Soal 1 / 5</span>
+          </div>
+
+          <!-- 4 Team Scoreboard Badges -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            <div class="p-3 rounded-2xl bg-rose-950/40 border border-rose-500/40 text-center">
+              <span class="text-xs font-bold text-rose-300 block">Tim Merah</span>
+              <span id="teamScore-0" class="font-game font-bold text-xl text-white">0</span>
+              <button onclick="gameHub.scoreTeam(0, 10)" class="mt-1 px-2 py-0.5 rounded bg-rose-600 hover:bg-rose-500 text-[10px] font-bold text-white">+10 Poin</button>
+            </div>
+            <div class="p-3 rounded-2xl bg-blue-950/40 border border-blue-500/40 text-center">
+              <span class="text-xs font-bold text-blue-300 block">Tim Biru</span>
+              <span id="teamScore-1" class="font-game font-bold text-xl text-white">0</span>
+              <button onclick="gameHub.scoreTeam(1, 10)" class="mt-1 px-2 py-0.5 rounded bg-blue-600 hover:bg-blue-500 text-[10px] font-bold text-white">+10 Poin</button>
+            </div>
+            <div class="p-3 rounded-2xl bg-emerald-950/40 border border-emerald-500/40 text-center">
+              <span class="text-xs font-bold text-emerald-300 block">Tim Hijau</span>
+              <span id="teamScore-2" class="font-game font-bold text-xl text-white">0</span>
+              <button onclick="gameHub.scoreTeam(2, 10)" class="mt-1 px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-500 text-[10px] font-bold text-white">+10 Poin</button>
+            </div>
+            <div class="p-3 rounded-2xl bg-amber-950/40 border border-amber-500/40 text-center">
+              <span class="text-xs font-bold text-amber-300 block">Tim Kuning</span>
+              <span id="teamScore-3" class="font-game font-bold text-xl text-white">0</span>
+              <button onclick="gameHub.scoreTeam(3, 10)" class="mt-1 px-2 py-0.5 rounded bg-amber-600 hover:bg-amber-500 text-[10px] font-bold text-white">+10 Poin</button>
+            </div>
+          </div>
+
+          <!-- Active Question Arena -->
+          <div class="p-5 bg-slate-950/80 border border-slate-800 rounded-2xl text-center space-y-3">
+            <span class="text-xs text-amber-400 font-bold uppercase tracking-wider">Pertanyaan Rebutan Bersama:</span>
+            <h3 id="tcQuestionText" class="text-base sm:text-lg font-bold text-white">
+              Menyiapkan pertanyaan rebutan...
+            </h3>
+            <div class="flex items-center justify-center gap-2 pt-2">
+              <button onclick="gameHub.revealTeamAnswer()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200">
+                Buka Kunci Jawaban 👁️
+              </button>
+              <button onclick="gameHub.nextTeamQuestion()" class="px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-500 text-xs font-bold text-white shadow">
+                Soal Berikutnya ➔
+              </button>
+            </div>
+            <p id="tcAnswerRevealed" class="text-xs font-bold text-emerald-400 hidden pt-2"></p>
+          </div>
+        </div>
+      </section>
+
+      <!-- GAME 18: TEBAK ISTILAH (3 CLUES) -->
+      <section id="game-guessclue" class="hidden max-w-2xl mx-auto my-auto w-full space-y-5">
+        <div class="bg-slate-900/90 border border-yellow-500/30 p-6 rounded-3xl shadow-2xl backdrop-blur-md space-y-5 text-center">
+          <div class="flex items-center justify-between text-xs text-slate-400 border-b border-slate-800 pb-3">
+            <span class="font-bold text-yellow-400">💡 Tebak Istilah (3 Petunjuk)</span>
+            <span id="gcProgress">Konsep 1 / 5</span>
+            <span id="gcScore" class="font-game font-bold text-amber-300">Skor: 0</span>
+          </div>
+
+          <p class="text-xs text-slate-300">
+            Buka petunjuk satu demi satu. Semakin sedikit petunjuk yang dibuka, semakin besar poin yang diraih!
+          </p>
+
+          <!-- Progressive Clues List -->
+          <div class="space-y-2.5 text-left" id="gcCluesContainer">
+            <!-- Injected Clues 1, 2, 3 -->
+          </div>
+
+          <!-- Guess Options -->
+          <div class="grid grid-cols-2 gap-3 pt-2" id="gcOptionsGrid"></div>
+        </div>
+      </section>
+
+      <!-- GAME 19: STORY CHOICE (PETUALANGAN SAINS & SEJARAH) -->
+      <section id="game-storychoice" class="hidden max-w-2xl mx-auto my-auto w-full space-y-5">
+        <div class="bg-slate-900/90 border border-pink-500/30 p-6 rounded-3xl shadow-2xl backdrop-blur-md space-y-5">
+          <div class="flex items-center justify-between text-xs text-slate-400 border-b border-slate-800 pb-3">
+            <span class="font-bold text-pink-400">📜 Story Choice: Petualangan Sains</span>
+            <span id="storyStepText">Tahap 1</span>
+          </div>
+
+          <!-- Story Narrative Box -->
+          <div class="p-5 bg-slate-950/80 border border-slate-800 rounded-2xl space-y-3">
+            <span class="text-2xl block" id="storyIcon">🚀</span>
+            <h3 id="storyHeading" class="text-base sm:text-lg font-bold text-white font-game">
+              Misi Penjelajah: Dilema Laboratorium Energi
+            </h3>
+            <p id="storyNarrative" class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              Memuat naskah petualangan cerita...
+            </p>
+          </div>
+
+          <!-- Decision Action Buttons -->
+          <div class="space-y-2.5" id="storyChoicesContainer">
+            <!-- Dynamic Choice A and B -->
+          </div>
+        </div>
+      </section>
+
+      <!-- GAME 20: FLASHCARD MASTER (3D FLIP) -->
+      <section id="game-flashcards" class="hidden max-w-2xl mx-auto my-auto w-full space-y-5">
+        <div class="bg-slate-900/90 border border-blue-500/30 p-6 rounded-3xl shadow-2xl backdrop-blur-md space-y-5 text-center">
+          <div class="flex items-center justify-between text-xs text-slate-400 border-b border-slate-800 pb-3">
+            <span class="font-bold text-blue-400">🃏 Flashcard Master 3D</span>
+            <span id="fcProgress">Kartu 1 / 8</span>
+            <span id="fcMastered" class="text-emerald-400 font-bold">Dikuasai: 0</span>
+          </div>
+
+          <!-- 3D Flippable Card Element -->
+          <div class="perspective-1000 w-full h-64 sm:h-72 cursor-pointer mx-auto" onclick="gameHub.flipFlashcard()">
+            <div id="flashcardInner" class="w-full h-full transform-style-3d transition-transform duration-500 relative rounded-3xl border-2 border-blue-500/40 shadow-2xl">
+              
+              <!-- Front Face: Term -->
+              <div class="absolute inset-0 bg-slate-950 rounded-3xl backface-hidden flex flex-col items-center justify-center p-6 space-y-2">
+                <span class="text-xs uppercase tracking-widest text-blue-400 font-bold">Istilah Pembelajaran</span>
+                <h3 id="fcFrontTerm" class="text-2xl sm:text-3xl font-game font-bold text-white">
+                  Mitokondria
+                </h3>
+                <span class="text-[11px] text-slate-500 mt-4 block">💡 Klik kartu untuk membalik & melihat definisi</span>
+              </div>
+
+              <!-- Back Face: Definition -->
+              <div class="absolute inset-0 bg-gradient-to-br from-indigo-950 to-slate-950 rounded-3xl backface-hidden rotate-y-180 flex flex-col items-center justify-center p-6 space-y-3">
+                <span class="text-xs uppercase tracking-widest text-amber-400 font-bold">Definisi & Fungsi</span>
+                <p id="fcBackDefinition" class="text-sm sm:text-base text-slate-200 leading-relaxed font-semibold">
+                  Organel sel yang bertindak sebagai pembangkit tenaga sel tempat respirasi seluler memproduksi molekul energi ATP.
+                </p>
+                <span class="text-[11px] text-slate-400">Klik lagi untuk membalik ke istilah</span>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Spaced Repetition Mastery Buttons -->
+          <div class="flex items-center justify-center gap-3 pt-2">
+            <button onclick="gameHub.rateFlashcard(false)" class="flex-1 py-3 rounded-2xl bg-rose-950/80 border border-rose-500/40 text-rose-300 font-bold text-xs hover:bg-rose-900 transition active:scale-95">
+              ❌ Perlu Latihan Lagi
+            </button>
+            <button onclick="gameHub.rateFlashcard(true)" class="flex-1 py-3 rounded-2xl bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 font-bold text-xs hover:bg-emerald-900 transition active:scale-95">
+              ✔️ Sudah Paham & Hafal
+            </button>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <footer class="w-full bg-slate-950/90 border-t border-indigo-500/20 py-3.5 px-4 text-xs text-slate-400 mt-auto backdrop-blur-md z-30">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left">
+      <div class="flex items-center gap-2">
+        <span class="text-amber-400 text-base">🎮</span>
+        <span class="font-bold text-slate-200">EduPlay Arcade 12-in-1: Pusat Game Pembelajaran Interaktif</span>
+      </div>
+      <div>
+        Developer: <strong class="text-amber-300 font-semibold">RAHMAT GUFRON TSANI, S.Pd., MCE.</strong>
+      </div>
+      <div class="text-[11px] text-slate-500">
+        Inovasi Asesmen & Media Belajar Digital Abad-21
+      </div>
+    </div>
+  </footer>
+
+  <!-- Notification Toast -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 px-4 py-3 rounded-2xl bg-indigo-600 text-white text-xs sm:text-sm font-semibold shadow-2xl transition-all duration-300 transform translate-y-24 opacity-0 pointer-events-none flex items-center gap-2">
+    <span id="toastIcon">🔔</span>
+    <span id="toastMsg">Pemberitahuan Game</span>
+  </div>
+
+  <script>
+    /* =================================================================
+       TONE.JS AUDIO ENGINE: SYNTHESIZED SOUND EFFECTS
+       ================================================================= */
+    class AudioEngine {
+      constructor() {
+        this.enabled = true;
+        this.initialized = false;
+        this.poly = null;
+      }
+
+      async init() {
+        if (this.initialized) return;
+        try {
+          await Tone.start();
+          this.poly = new Tone.PolySynth(Tone.Synth, {
+            oscillator: { type: "triangle" },
+            envelope: { attack: 0.01, decay: 0.15, sustain: 0.1, release: 0.5 }
+          }).toDestination();
+          this.poly.volume.value = -8;
+          this.initialized = true;
+        } catch (e) {
+          console.warn("Audio needs interaction", e);
+        }
+      }
+
+      playCorrect() {
+        if (!this.enabled || !this.initialized) return;
+        const now = Tone.now();
+        this.poly.triggerAttackRelease("E5", "16n", now);
+        this.poly.triggerAttackRelease("B5", "8n", now + 0.1);
+      }
+
+      playWrong() {
+        if (!this.enabled || !this.initialized) return;
+        const now = Tone.now();
+        this.poly.triggerAttackRelease("F#3", "8n", now);
+        this.poly.triggerAttackRelease("C3", "4n", now + 0.1);
+      }
+
+      playClick() {
+        if (!this.enabled || !this.initialized) return;
+        this.poly.triggerAttackRelease("C6", "32n", Tone.now(), 0.2);
+      }
+
+      playSpin() {
+        if (!this.enabled || !this.initialized) return;
+        this.poly.triggerAttackRelease("G4", "32n", Tone.now(), 0.15);
+      }
+
+      playVictory() {
+        if (!this.enabled || !this.initialized) return;
+        const now = Tone.now();
+        ["C4", "G4", "C5", "E5", "G5"].forEach((n, i) => {
+          this.poly.triggerAttackRelease(n, "8n", now + i * 0.1);
+        });
+      }
+    }
+
+    /* =================================================================
+       CURATED DATASETS FOR ALL 12 GAMES (EXPANDED 50+ SOAL LENGKAP)
+       ================================================================= */
+    const GAME_DATA = {
+      // Game: Benar atau Salah (15 Soal Konseptual Sains, Sejarah, PPKn & Matematika)
+      truefalse: [
+        { q: "Fotosintesis pada tumbuhan menghasilkan gas Oksigen (O2) yang dibutuhkan manusia.", correct: true, exp: "Tumbuhan menyerap CO2 dan air untuk menghasilkan glukosa serta melepaskan oksigen.", grade: ['sd', 'smp', 'smk'] },
+        { q: "Mars adalah planet terbesar dalam sistem tata surya kita.", correct: false, exp: "Salah! Planet terbesar adalah Jupiter. Mars dijuluki planet merah karena kandungan besi oksida.", grade: ['sd', 'smp'] },
+        { q: "Sudut siku-siku memiliki besar ukuran tepat 90 derajat.", correct: true, exp: "Benar! Sudut siku-siku selalu berukuran tepat 90 derajat.", grade: ['sd', 'smp'] },
+        { q: "Ibu kota Indonesia pada era awal kemerdekaan tidak pernah dipindahkan ke Yogyakarta.", correct: false, exp: "Salah! Pada 4 Januari 1946, ibu kota RI sempat dipindahkan sementara ke Yogyakarta.", grade: ['sd', 'smp'] },
+        { q: "Air mendidih pada suhu 100°C pada tekanan atmosfer normal 1 atm.", correct: true, exp: "Benar! Titik didih normal air adalah 100°C.", grade: ['sd', 'smp', 'smk'] },
+        { q: "Darah yang kaya akan oksigen dipompa dari bilik kiri jantung menuju ke seluruh tubuh.", correct: true, exp: "Benar! Bilik kiri (ventrikel kiri) memompa darah kaya O2 melalui aorta ke seluruh tubuh.", grade: ['smp', 'smk'] },
+        { q: "Semua bilangan prima selalu merupakan bilangan ganjil.", correct: false, exp: "Salah! Angka 2 adalah bilangan genap sekaligus bilangan prima.", grade: ['sd', 'smp'] },
+        { q: "Gelombang bunyi dapat merambat melalui ruang hampa udara di luar angkasa.", correct: false, exp: "Salah! Bunyi membutuhkan medium zat (padat/cair/gas) untuk merambat.", grade: ['smp', 'smk'] },
+        { q: "Sumpah Pemuda dideklarasikan oleh para pemuda Indonesia pada tanggal 28 Oktober 1928.", correct: true, exp: "Benar! Kongres Pemuda II melahirkan ikrar persatuan bangsa pada 28 Oktober 1928.", grade: ['sd', 'smp', 'smk'] },
+        { q: "Bagian terkecil dari makhluk hidup yang menyusun struktur kehidupannya adalah sel.", correct: true, exp: "Benar! Sel adalah unit struktural dan fungsional terkecil dari kehidupan.", grade: ['smp', 'smk'] },
+        { q: "Gaya gesek selalu searah dengan arah gerak benda.", correct: false, exp: "Salah! Gaya gesek selalu berlawanan arah dengan kecenderungan arah gerak benda.", grade: ['smp', 'smk'] },
+        { q: "Pancasila resmi disahkan sebagai dasar negara Indonesia pada tanggal 18 Agustus 1945.", correct: true, exp: "Benar! PPKI mengesahkan UUD 1945 dan Pancasila pada 18 Agustus 1945.", grade: ['sd', 'smp', 'smk'] },
+        { q: "Kecepatan cahaya di ruang hampa lebih lambat daripada kecepatan suara di udara.", correct: false, exp: "Salah! Kecepatan cahaya (~300.000 km/s) jauh melampaui kecepatan suara (~340 m/s).", grade: ['smp', 'smk'] },
+        { q: "Pohon bernapas menghirup karbon dioksida di malam hari dan mengeluarkan oksigen murni.", correct: false, exp: "Salah! Pada malam hari tanpa cahaya, tumbuhan melakukan respirasi seluler menghirup O2 dan melepas CO2.", grade: ['smp', 'smk'] },
+        { q: "Bilangan negatif dikalikan dengan bilangan negatif akan menghasilkan bilangan positif.", correct: true, exp: "Benar! Aturan perkalian tanda: (-) × (-) = (+).", grade: ['smp', 'smk'] }
+      ],
+
+      // Game: Susun Kata (15 Kosakata Sains, Sejarah & Teknologi)
+      wordscramble: [
+        { word: "FOTOSINTESIS", clue: "Proses memasak makanan oleh klorofil tumbuhan hijau", grade: ['sd', 'smp', 'smk'] },
+        { word: "PROKLAMASI", clue: "Pernyataan kemerdekaan resmi bangsa Indonesia 17 Agustus 1945", grade: ['sd', 'smp', 'smk'] },
+        { word: "GRAVITASI", clue: "Gaya tarik bumi yang menarik benda menuju pusat bumi", grade: ['sd', 'smp'] },
+        { word: "ALVEOLUS", clue: "Kantung udara tempat pertukaran oksigen dan CO2 di paru-paru", grade: ['smp', 'smk'] },
+        { word: "DEMOKRASI", clue: "Sistem pemerintahan dari rakyat, oleh rakyat, untuk rakyat", grade: ['smp', 'smk'] },
+        { word: "METAMORFOSIS", clue: "Perubahan bentuk fisik hewan secara berkala dari fase telur ke dewasa", grade: ['sd', 'smp'] },
+        { word: "HEMOGLOBIN", clue: "Protein sel darah merah pengikat oksigen di seluruh tubuh", grade: ['smp', 'smk'] },
+        { word: "KONDENSASI", clue: "Perubahan wujud zat dari uap gas menjadi tetesan air cair", grade: ['sd', 'smp'] },
+        { word: "EKOSISTEM", clue: "Sistem interaksi timbal balik antara makhluk hidup dan lingkungannya", grade: ['sd', 'smp', 'smk'] },
+        { word: "ALGORITMA", clue: "Urutan langkah-langkah logis dan terstruktur untuk memecahkan masalah", grade: ['smk'] },
+        { word: "RELEVANSI", clue: "Hubungan keterkaitan yang erat dan cocok dengan pokok masalah", grade: ['smk'] },
+        { word: "BHINNEKA", clue: "Kata dalam semboyan lambang Garuda Pancasila yang bermakna beraneka ragam", grade: ['sd', 'smp'] },
+        { word: "ATMOSFER", clue: "Lapisan udara selimut gas pelindung yang menyelimuti planet bumi", grade: ['smp', 'smk'] },
+        { word: "EVAPORASI", clue: "Peristiwa penguapan air permukaan laut dan danau oleh terik matahari", grade: ['sd', 'smp'] },
+        { word: "MITOKONDRIA", clue: "Pabrik penghasil molekul energi ATP dalam respirasi sel makhluk hidup", grade: ['smp', 'smk'] }
+      ],
+
+      // Game: Math Puzzle (15 Teka-teki Hitung & Logika)
+      mathpuzzle: [
+        { eq: "(12 × 4) - ? = 35", answer: 13, options: [11, 13, 15, 17], hint: "12 × 4 = 48. Maka 48 - ? = 35", grade: ['sd', 'smp'] },
+        { eq: "5² + ? = 41", answer: 16, options: [14, 16, 18, 20], hint: "5² = 25. Maka 41 - 25 = ?", grade: ['sd', 'smp'] },
+        { eq: "√144 + (? × 3) = 27", answer: 5, options: [4, 5, 6, 7], hint: "√144 = 12. Maka ? × 3 = 15", grade: ['smp', 'smk'] },
+        { eq: "(30 ÷ 5) × ? = 42", answer: 7, options: [6, 7, 8, 9], hint: "30 ÷ 5 = 6. Maka 6 × ? = 42", grade: ['sd', 'smp'] },
+        { eq: "3x - 7 = 20, berapakah x?", answer: 9, options: [8, 9, 10, 11], hint: "3x = 27, maka x = ?", grade: ['smp', 'smk'] },
+        { eq: "2³ × ? = 48", answer: 6, options: [4, 6, 8, 12], hint: "2³ = 8. Maka 8 × ? = 48", grade: ['sd', 'smp'] },
+        { eq: "(50 - 15) ÷ ? = 7", answer: 5, options: [3, 5, 7, 9], hint: "50 - 15 = 35. Maka 35 ÷ ? = 7", grade: ['sd', 'smp'] },
+        { eq: "√? + 14 = 23", answer: 81, options: [64, 81, 100, 49], hint: "√? = 23 - 14 = 9. Maka 9² = ?", grade: ['smp', 'smk'] },
+        { eq: "4 × (8 + ?) = 48", answer: 4, options: [2, 4, 6, 8], hint: "8 + ? = 48 ÷ 4 = 12. Maka ? = 12 - 8", grade: ['sd', 'smp'] },
+        { eq: "15% dari 200 + ? = 45", answer: 15, options: [10, 15, 20, 25], hint: "15% × 200 = 30. Maka 30 + ? = 45", grade: ['smp', 'smk'] },
+        { eq: "(?² - 5) = 20", answer: 5, options: [4, 5, 6, 7], hint: "?² = 25. Maka ? = √25", grade: ['smp', 'smk'] },
+        { eq: "(64 ÷ 8) × ? = 72", answer: 9, options: [7, 8, 9, 10], hint: "64 ÷ 8 = 8. Maka 8 × ? = 72", grade: ['sd', 'smp'] },
+        { eq: "100 - (3 × ?) = 61", answer: 13, options: [11, 12, 13, 14], hint: "3 × ? = 39. Maka 39 ÷ 3 = ?", grade: ['smp', 'smk'] },
+        { eq: "2⁴ + ? = 30", answer: 14, options: [12, 14, 16, 18], hint: "2⁴ = 16. Maka 30 - 16 = ?", grade: ['smp', 'smk'] },
+        { eq: "√64 + √? = 15", answer: 49, options: [36, 49, 64, 81], hint: "8 + √? = 15, maka √? = 7. 7² = ?", grade: ['smp', 'smk'] }
+      ],
+
+      // Game: Tebak Gambar (10 Ilustrasi SVG Visual Sains & Budaya)
+      guessimage: [
+        {
+          title: "Jantung Manusia",
+          svg: `<svg viewBox="0 0 100 100" class="w-32 h-32 text-rose-500 fill-current"><path d="M50 88.5l-5.8-5.3C23.6 64.6 10 52.3 10 37.2 10 24.9 19.7 15.2 32 15.2c6.9 0 13.6 3.2 18 8.3 4.4-5.1 11.1-8.3 18-8.3 12.3 0 22 9.7 22 22 0 15.1-13.6 27.4-34.2 46.1L50 88.5z"/></svg>`,
+          options: ["Jantung Manusia", "Paru-paru", "Lambung", "Ginjal"],
+          correct: 0,
+          grade: ['sd', 'smp', 'smk']
+        },
+        {
+          title: "Mikroskop Laboratorium",
+          svg: `<svg viewBox="0 0 100 100" class="w-32 h-32 stroke-cyan-400 fill-none stroke-[4]"><path d="M40 20 L60 20 L50 40 Z M50 40 L50 75 M35 75 L65 75 M25 85 L75 85 M60 40 A15 15 0 0 1 60 70"/></svg>`,
+          options: ["Teleskop", "Mikroskop", "Termometer", "Barometer"],
+          correct: 1,
+          grade: ['sd', 'smp', 'smk']
+        },
+        {
+          title: "Candi Borobudur / Stupa",
+          svg: `<svg viewBox="0 0 100 100" class="w-32 h-32 stroke-amber-400 fill-none stroke-[3]"><path d="M50 15 L50 25 M35 45 C35 30 65 30 65 45 Z M20 65 L80 65 M10 85 L90 85"/></svg>`,
+          options: ["Monumen Nasional", "Candi Borobudur", "Gedung Sate", "Jembatan Ampera"],
+          correct: 1,
+          grade: ['sd', 'smp', 'smk']
+        },
+        {
+          title: "Daun & Klorofil",
+          svg: `<svg viewBox="0 0 100 100" class="w-32 h-32 stroke-emerald-400 fill-emerald-500/20 stroke-[3]"><path d="M20 80 Q50 10 80 20 Q90 50 20 80 Z M20 80 L65 35"/></svg>`,
+          options: ["Akar Tunggang", "Daun (Klorofil)", "Bunga Sepatu", "Batang Kayu"],
+          correct: 1,
+          grade: ['sd', 'smp']
+        },
+        {
+          title: "Atom & Elektron",
+          svg: `<svg viewBox="0 0 100 100" class="w-32 h-32 stroke-indigo-400 fill-none stroke-[3]"><ellipse cx="50" cy="50" rx="40" ry="15" transform="rotate(30 50 50)"/><ellipse cx="50" cy="50" rx="40" ry="15" transform="rotate(-30 50 50)"/><circle cx="50" cy="50" r="8" class="fill-indigo-500"/></svg>`,
+          options: ["Molekul Air", "Struktur Atom", "Sel Darah", "Bakteri"],
+          correct: 1,
+          grade: ['smp', 'smk']
+        },
+        {
+          title: "Planet Saturnus & Cincin",
+          svg: `<svg viewBox="0 0 100 100" class="w-32 h-32 stroke-amber-300 fill-none stroke-[3]"><circle cx="50" cy="50" r="22" class="fill-amber-500/40"/><ellipse cx="50" cy="50" rx="44" ry="12" transform="rotate(-20 50 50)" stroke="#f59e0b"/></svg>`,
+          options: ["Bumi", "Matahari", "Saturnus", "Bulan"],
+          correct: 2,
+          grade: ['sd', 'smp']
+        },
+        {
+          title: "Paru-Paru Manusia",
+          svg: `<svg viewBox="0 0 100 100" class="w-32 h-32 stroke-rose-400 fill-rose-500/20 stroke-[3]"><path d="M50 20 L50 45 M50 45 L35 55 M50 45 L65 55 M22 50 C15 65 25 85 40 85 C45 85 45 60 45 55 Z M78 50 C85 65 75 85 60 85 C55 85 55 60 55 55 Z"/></svg>`,
+          options: ["Jantung", "Ginjal", "Paru-paru", "Usus Halus"],
+          correct: 2,
+          grade: ['sd', 'smp', 'smk']
+        },
+        {
+          title: "DNA Double Helix",
+          svg: `<svg viewBox="0 0 100 100" class="w-32 h-32 stroke-cyan-400 fill-none stroke-[3]"><path d="M30 15 Q50 35 70 50 T30 85 M70 15 Q50 35 30 50 T70 85 M35 25 L65 25 M32 50 L68 50 M35 75 L65 75"/></svg>`,
+          options: ["Kromosom / DNA", "Kabel Listrik", "Jaringan Otot", "Tulang Rawan"],
+          correct: 0,
+          grade: ['smp', 'smk']
+        },
+        {
+          title: "Gunung Berapi / Vulkanisme",
+          svg: `<svg viewBox="0 0 100 100" class="w-32 h-32 stroke-orange-500 fill-none stroke-[3]"><path d="M15 85 L42 35 L48 35 L52 35 L58 35 L85 85 Z M42 35 C45 15 55 15 58 35 M45 25 Q50 5 55 25" class="stroke-red-400 fill-red-500/30"/></svg>`,
+          options: ["Gua Karst", "Gunung Berapi", "Piramida", "Bukit Pasir"],
+          correct: 1,
+          grade: ['sd', 'smp']
+        },
+        {
+          title: "Termometer Pengukur Suhu",
+          svg: `<svg viewBox="0 0 100 100" class="w-32 h-32 stroke-teal-300 fill-none stroke-[3]"><rect x="44" y="15" width="12" height="50" rx="6"/><circle cx="50" cy="74" r="14" class="fill-red-500 stroke-red-500"/><path d="M50 30 L50 65" class="stroke-red-500 stroke-[4]"/></svg>`,
+          options: ["Barometer", "Termometer Suhu", "Jangka Sorong", "Neraca Pegas"],
+          correct: 1,
+          grade: ['sd', 'smp', 'smk']
+        }
+      ],
+
+      // Game: Sortir Kategori (5 Putaran dengan 30 Item Klasifikasi)
+      sortcategory: [
+        {
+          categories: ["Herbivora", "Karnivora", "Omnivora"],
+          grade: ['sd', 'smp'],
+          items: [
+            { name: "Sapi", cat: "Herbivora" },
+            { name: "Singa", cat: "Karnivora" },
+            { name: "Ayam", cat: "Omnivora" },
+            { name: "Kambing", cat: "Herbivora" },
+            { name: "Harimau", cat: "Karnivora" },
+            { name: "Bebek", cat: "Omnivora" }
+          ]
+        },
+        {
+          categories: ["Zat Padat", "Zat Cair", "Zat Gas"],
+          grade: ['sd', 'smp'],
+          items: [
+            { name: "Batu Bata", cat: "Zat Padat" },
+            { name: "Minyak Goreng", cat: "Zat Cair" },
+            { name: "Oksigen", cat: "Zat Gas" },
+            { name: "Besi Baja", cat: "Zat Padat" },
+            { name: "Sirup Manis", cat: "Zat Cair" },
+            { name: "Uap Air", cat: "Zat Gas" }
+          ]
+        },
+        {
+          categories: ["Energi Terbarukan", "Energi Fosil"],
+          grade: ['smp', 'smk'],
+          items: [
+            { name: "Cahaya Matahari", cat: "Energi Terbarukan" },
+            { name: "Batubara", cat: "Energi Fosil" },
+            { name: "Kincir Angin", cat: "Energi Terbarukan" },
+            { name: "Minyak Bumi", cat: "Energi Fosil" },
+            { name: "Aliran Air (PLTA)", cat: "Energi Terbarukan" },
+            { name: "Gas Alam Pipa", cat: "Energi Fosil" }
+          ]
+        },
+        {
+          categories: ["Organ Pernapasan", "Organ Pencernaan"],
+          grade: ['sd', 'smp'],
+          items: [
+            { name: "Alveolus Paru", cat: "Organ Pernapasan" },
+            { name: "Lambung", cat: "Organ Pencernaan" },
+            { name: "Bronkus", cat: "Organ Pernapasan" },
+            { name: "Usus Halus", cat: "Organ Pencernaan" },
+            { name: "Trakea", cat: "Organ Pernapasan" },
+            { name: "Kerongkongan (Esofagus)", cat: "Organ Pencernaan" }
+          ]
+        },
+        {
+          categories: ["Satuan Baku", "Satuan Tak Baku"],
+          grade: ['smp', 'smk'],
+          items: [
+            { name: "Meter (m)", cat: "Satuan Baku" },
+            { name: "Jengkal Tangan", cat: "Satuan Tak Baku" },
+            { name: "Kilogram (kg)", cat: "Satuan Baku" },
+            { name: "Depa / Langkah", cat: "Satuan Tak Baku" },
+            { name: "Detik / Sekon", cat: "Satuan Baku" },
+            { name: "Helaian Tombak", cat: "Satuan Tak Baku" }
+          ]
+        }
+      ],
+
+      // Game: Roda Keberuntungan (12 Sektor Tantangan Beragam)
+      spinwheel: [
+        { label: "Sains", color: "#059669", q: "Organ yang memompa darah ke seluruh tubuh adalah...", opts: ["Jantung", "Hati", "Ginjal", "Lambung"], correct: 0 },
+        { label: "Matematika", color: "#d97706", q: "Berapakah hasil dari 15% dari 300?", opts: ["30", "45", "50", "60"], correct: 1 },
+        { label: "Sejarah", color: "#dc2626", q: "Tokoh pengetik naskah proklamasi kemerdekaan adalah...", opts: ["Sayuti Melik", "Sukarni", "B.M. Diah", "Wikana"], correct: 0 },
+        { label: "Bahasa", color: "#2563eb", q: "Sinonim dari kata 'Inovasi' adalah...", opts: ["Pembaruan", "Pengulangan", "Kemunduran", "Pemisahan"], correct: 0 },
+        { label: "PPKn", color: "#7c3aed", q: "Lambang sila ke-3 Pancasila adalah...", opts: ["Pohon Beringin", "Bintang", "Rantai", "Banteng"], correct: 0 },
+        { label: "Fisika", color: "#0891b2", q: "Alat pengukur kuat arus listrik dalam rangkaian tertutup adalah...", opts: ["Amperemeter", "Voltmeter", "Termometer", "Barometer"], correct: 0 },
+        { label: "Biologi", color: "#16a34a", q: "Zat hijau daun penyerap energi matahari disebut...", opts: ["Klorofil", "Melanin", "Karoten", "Hemoglobin"], correct: 0 },
+        { label: "Geografi", color: "#ea580c", q: "Danau vulkanik terbesar di Asia Tenggara dan Indonesia adalah...", opts: ["Danau Toba", "Danau Singkarak", "Danau Poso", "Danau Matano"], correct: 0 },
+        { label: "Astronomi", color: "#4f46e5", q: "Planet terdekat dari matahari dalam tata surya kita adalah...", opts: ["Merkurius", "Venus", "Mars", "Bumi"], correct: 0 },
+        { label: "Kimia", color: "#c026d3", q: "Simbol kimia unsur emas murni dalam tabel periodik adalah...", opts: ["Au", "Ag", "Fe", "Cu"], correct: 0 },
+        { label: "Teknologi", color: "#0284c7", q: "Otak utama pemroses instruksi pada sistem komputer adalah...", opts: ["CPU", "RAM", "Harddisk", "Power Supply"], correct: 0 },
+        { label: "HOTS", color: "#db2777", q: "Gaya yang bekerja saat penerjun parasut melambat di udara adalah...", opts: ["Gesekan Udara", "Magnet", "Gravitasi Murni", "Nuklir"], correct: 0 }
+      ],
+
+      // Game: Susun Kronologi (6 Tantangan Linimasa Lengkap)
+      timeline: [
+        {
+          topic: "Metamorfosis Sempurna Kupu-Kupu",
+          steps: ["Telur", "Ulat (Larva)", "Kepompong (Pupa)", "Kupu-kupu Dewasa (Imago)"]
+        },
+        {
+          topic: "Kronologi Menuju Proklamasi Kemerdekaan RI 1945",
+          steps: [
+            "Jepang menyerah kepada Sekutu (15 Agustus)",
+            "Peristiwa Rengasdengklok para pemuda (16 Agustus)",
+            "Penyusunan Teks di Rumah Laksamana Maeda (Malam 16 Agustus)",
+            "Pembacaan Teks Proklamasi di Pegangsaan Timur (17 Agustus)"
+          ]
+        },
+        {
+          topic: "Daur Air (Siklus Hidrologi Alami)",
+          steps: [
+            "Evaporasi (Penguapan air laut)",
+            "Kondensasi (Pembentukan awan dingin)",
+            "Presipitasi (Turunnya hujan ke tanah)",
+            "Infiltrasi (Penyerapan air ke pori bumi)"
+          ]
+        },
+        {
+          topic: "Urutan Tingkatan Rantai Makanan Sawah",
+          steps: [
+            "Padi Hijau (Produsen)",
+            "Belalang (Konsumen Primer I)",
+            "Katak Sawah (Konsumen Sekunder II)",
+            "Ular Kobra (Konsumen Tersier III)"
+          ]
+        },
+        {
+          topic: "Kronologi Sumpah Pemuda 1928",
+          steps: [
+            "Kongres Pemuda I di Batavia (1926)",
+            "Rapat Pertama di Gedung Katholieke Jongenlingen (27 Okt 1928)",
+            "Lagu Indonesia Raya Diperdengarkan Biola Wage Rudolf Supratman",
+            "Deklarasi Bersama Tiga Ikrar Sumpah Pemuda (28 Okt 1928)"
+          ]
+        },
+        {
+          topic: "Urutan Lapisan Atmosfer Bumi dari Permukaan Tanah ke Luar Angkasa",
+          steps: [
+            "Troposfer (Tempat cuaca dan awan)",
+            "Stratosfer (Lapisan ozon pelindung UV)",
+            "Mesosfer (Pembakar meteor jatuh)",
+            "Termosfer & Eksosfer (Satelit & luar angkasa)"
+          ]
+        }
+      ],
+
+      // Game: Team Challenge (15 Soal Kuis Cerdas Cermat Rebutan)
+      teamchallenge: [
+        { q: "Apakah nama ibukota tertua kerajaan Majapahit di Jawa Timur?", a: "Trowulan" },
+        { q: "Sebutkan nama zat hijau daun yang menyerap energi foton matahari!", a: "Klorofil" },
+        { q: "Berapakah sudut total dari ketiga sudut dalam bangun segitiga datar?", a: "180 Derajat" },
+        { q: "Siapakah pencipta lagu kebangsaan Indonesia Raya?", a: "Wage Rudolf Supratman" },
+        { q: "Unsur kimia paling melimpah di alam semesta dengan nomor atom 1 adalah?", a: "Hidrogen (H)" },
+        { q: "Sebutkan gaya yang mempertahankan planet-planet mengorbit pada poros matahari!", a: "Gaya Gravitasi" },
+        { q: "Apakah nama selat yang memisahkan Pulau Sumatera dan Pulau Jawa?", a: "Selat Sunda" },
+        { q: "Sebutkan rumus matematis luas bangun jajar genjang datar!", a: "Alas × Tinggi (a × t)" },
+        { q: "Siapakah tokoh pahlawan wanita pejuang emansipasi dari Jepara Jawa Tengah?", a: "R.A. Kartini" },
+        { q: "Berapakah nilai titik beku air murni pada skala Celcius standar?", a: "0 Derajat Celcius" },
+        { q: "Apakah nama organel sel yang berfungsi sebagai pabrik respirasi penghasil ATP?", a: "Mitokondria" },
+        { q: "Sebutkan nama sistem pemerintahan yang kekuasaannya berpusat dari rakyat dan untuk rakyat!", a: "Demokrasi" },
+        { q: "Berapakah hasil dari 2 pangkat 5 (2⁵)?", a: "32" },
+        { q: "Alat laboratorium yang digunakan untuk melihat benda mikro bersel tunggal adalah?", a: "Mikroskop" },
+        { q: "Peristiwa perubahan wujud es padat langsung menjadi gas tanpa mencair dinamakan?", a: "Menyublim (Sublimasi)" }
+      ],
+
+      // Game: Tebak Istilah (10 Konsep dengan 3 Petunjuk Bertahap)
+      guessclue: [
+        {
+          term: "FOTOSINTESIS",
+          clues: [
+            "1. Terjadi pada organisme produsen yang memiliki pigmen hijau daun.",
+            "2. Memerlukan bahan baku air (H2O), karbon dioksida (CO2), dan energi foton.",
+            "3. Menghasilkan glukosa dan oksigen yang menopang kehidupan di bumi."
+          ],
+          options: ["Fotosintesis", "Respirasi", "Transpirasi", "Fermentasi"],
+          correct: 0
+        },
+        {
+          term: "PANCASILA",
+          clues: [
+            "1. Pertama kali digagas oleh Ir. Soekarno dalam sidang BPUPKI tanggal 1 Juni 1945.",
+            "2. Terdiri dari lima sila yang saling berkesinambungan dan menjiwai hukum nasional.",
+            "3. Menjadi dasar falsafah dan ideologi resmi Negara Kesatuan Republik Indonesia."
+          ],
+          options: ["UUD 1945", "Pancasila", "Bhinneka Tunggal Ika", "Piagam Jakarta"],
+          correct: 1
+        },
+        {
+          term: "GRAVITASI",
+          clues: [
+            "1. Dirumuskan pertama kali oleh fisikawan Sir Isaac Newton lewat fenomena apel jatuh.",
+            "2. Membuat planet-planet di tata surya mengorbit teratur mengelilingi matahari.",
+            "3. Gaya tarik massa bumi yang menyebabkan percepatan konstan sekitar 9,8 m/s²."
+          ],
+          options: ["Gaya Gesek", "Gravitasi", "Gaya Magnet", "Gaya Pegas"],
+          correct: 1
+        },
+        {
+          term: "ALGORITMA",
+          clues: [
+            "1. Berasal dari nama ilmuwan muslim Persia, Muhammad ibn Musa al-Khwarizmi.",
+            "2. Digunakan pemrogram untuk menyusun instruksi logis komputer langkah demi langkah.",
+            "3. Merupakan dasar logika dari seluruh perangkat lunak dan kecerdasan buatan dunia."
+          ],
+          options: ["Algoritma", "Hardware", "Database", "Protokol"],
+          correct: 0
+        },
+        {
+          term: "EKOSISTEM",
+          clues: [
+            "1. Menggabungkan unsur biotik (makhluk hidup) dan abiotik (tanah, air, suhu udara).",
+            "2. Di dalamnya terjadi aliran energi melalui rantai makanan dan daur biogeokimia.",
+            "3. Contohnya meliputi hutan hujan tropis, padang rumput, terumbu karang, dan danau."
+          ],
+          options: ["Biosfer", "Komunitas", "Ekosistem", "Populasi"],
+          correct: 2
+        },
+        {
+          term: "KONDENSASI",
+          clues: [
+            "1. Merupakan salah satu tahap krusial dalam siklus hidrologi daur air alami.",
+            "2. Terjadi saat uap air hangat membubung ke atmosfer dan mengalami penurunan suhu dingin.",
+            "3. Mengubah gas uap air menjadi titik-titik embun air pembentuk gumpalan awan."
+          ],
+          options: ["Evaporasi", "Kondensasi", "Infiltrasi", "Presipitasi"],
+          correct: 1
+        },
+        {
+          term: "DEMOKRASI",
+          clues: [
+            "1. Berakar dari kata Yunani 'demos' yang berarti rakyat dan 'kratos' yang berarti kekuasaan.",
+            "2. Sering didefinisikan Abraham Lincoln sebagai pemerintahan dari, oleh, dan untuk rakyat.",
+            "3. Mewajibkan adanya pemilu jujur dan adil serta kebebasan berpendapat bagi warga negara."
+          ],
+          options: ["Monarki", "Oligarki", "Demokrasi", "Aristokrasi"],
+          correct: 2
+        },
+        {
+          term: "HEMOGLOBIN",
+          clues: [
+            "1. Berada di dalam butiran sel darah merah (eritrosit) manusia dan hewan vertebrata.",
+            "2. Mengandung gugus zat besi (heme) yang memberikan warna merah pekat pada cairan darah.",
+            "3. Bertugas mengikat molekul oksigen di paru-paru untuk diedarkan ke seluruh jaringan sel."
+          ],
+          options: ["Trombosit", "Hemoglobin", "Plasma Darah", "Leukosit"],
+          correct: 1
+        },
+        {
+          term: "BOROBUDUR",
+          clues: [
+            "1. Dibangun pada abad ke-8 masehi oleh Dinasti Syailendra di lembah Progo Jawa Tengah.",
+            "2. Merupakan monumen candi Buddha terbesar di dunia yang dihiasi ribuan panel relief dan stupa.",
+            "3. Diakui UNESCO sebagai Warisan Budaya Dunia dan menjadi pusat peringatan Hari Waisak."
+          ],
+          options: ["Prambanan", "Borobudur", "Mendut", "Muara Takus"],
+          correct: 1
+        },
+        {
+          term: "METAMORFOSIS",
+          clues: [
+            "1. Proses biologis perubahan struktur dan bentuk tubuh hewan pasca menetas atau lahir.",
+            "2. Terbagi menjadi tipe sempurna (lewat fase pupa) dan tidak sempurna (nimfa tanpa pupa).",
+            "3. Dialami oleh serangga seperti kupu-kupu, nyamuk, katak, dan kumbang."
+          ],
+          options: ["Adaptasi", "Evolusi", "Metamorfosis", "Regenerasi"],
+          correct: 2
+        }
+      ],
+
+      // Game: Story Choice (Interactive Branching)
+      storychoice: {
+        step1: {
+          icon: "🚀",
+          title: "Laboratorium Antariksa Alpha",
+          text: "Kamu adalah ilmuwan muda yang sedang bertugas di stasiun antariksa. Alarm mendadak berbunyi! Sistem oksigen darurat mengalami penurunan daya drastis karena badai radiasi matahari.",
+          choices: [
+            { text: "Prioritaskan memperbaiki panel surya di luar stasiun", next: "step2A" },
+            { text: "Alihkan daya dari laboratorium riset cadangan baterai", next: "step2B" }
+          ]
+        },
+        step2A: {
+          icon: "👨‍🚀",
+          title: "Misi Spacewalk Berbahaya",
+          text: "Kamu mengenakan pakaian astronaut dan keluar ke hampa udara. Panel surya tersumbat debu mikrometeorit. Kamu berhasil membersihkannya, namun alat komunikasimu mengalami gangguan statis!",
+          choices: [
+            { text: "Gunakan kabel jangkar manual untuk kembali ke palka", next: "stepEndGood" },
+            { text: "Coba perbaiki pemancar radio di tempat sebelum masuk", next: "stepEndBad" }
+          ]
+        },
+        step2B: {
+          icon: "🔋",
+          title: "Optimalisasi Daya Reaktor",
+          text: "Kamu masuk ke ruang baterai cadangan. Mengalirkan daya berhasil menyelamatkan kadar oksigen! Namun eksperimen kristal langka berharga terancam gagal mencair.",
+          choices: [
+            { text: "Pertahankan keselamatan awak; abaikan kristal eksperimen", next: "stepEndGood" },
+            { text: "Bagi daya 50:50 dengan risiko listrik drop kembali", next: "stepEndRisky" }
+          ]
+        },
+        stepEndGood: {
+          icon: "🎉",
+          title: "Misi Sukses Sempurna!",
+          text: "Keputusan tepat dan cermat! Seluruh kru stasiun selamat, oksigen kembali stabil 100%, dan kamu dianugerahi medali Penghargaan Sains Luar Angkasa.",
+          choices: [{ text: "Mulai Petualangan Baru", next: "step1" }]
+        },
+        stepEndBad: {
+          icon: "⚠️",
+          title: "Bahaya Tersesat di Orbit!",
+          text: "Memperbaiki radio memakan waktu terlalu lama dan tabung oksigen cadanganmu menipis! Untung robot penyelamat berhasil menarikmu masuk. Jadikan ini pelajaran manajemen risiko!",
+          choices: [{ text: "Coba Lagi", next: "step1" }]
+        },
+        stepEndRisky: {
+          icon: "⚡",
+          title: "Krisis Terselesaikan Bersyarat",
+          text: "Daya sempat drop sesaat namun generator darurat berhasil diaktifkan tepat waktu. Eksperimen terselamatkan dengan efisiensi 80%.",
+          choices: [{ text: "Mainkan Cerita Lain", next: "step1" }]
+        }
+      },
+
+      // Game: Flashcards (20 Kartu Hafalan Edukatif Sains, Hukum, & Sejarah)
+      flashcards: [
+        { term: "Mitokondria", def: "Organel sel berbentuk lonjong yang berfungsi sebagai penghasil energi (ATP) melalui respirasi sel." },
+        { term: "Bhinneka Tunggal Ika", def: "Semboyan persatuan Indonesia dari Kitab Sutasoma karya Mpu Tantular, bermakna berbeda-beda tetapi tetap satu." },
+        { term: "Hukum Archimedes", def: "Benda yang dicelupkan ke fluida mengalami gaya apung ke atas sebesar berat fluida yang dipindahkan." },
+        { term: "Asortasi Bebas (Hukum Mendel II)", def: "Prinsip genetika bahwa pasangan alel berlainan memisah dan berpasangan secara mandiri saat pembentukan gamet." },
+        { term: "Kondensasi", def: "Perubahan wujud zat dari fase gas (uap air) menjadi fase cair akibat penurunan suhu." },
+        { term: "Algoritma FIFO", def: "Prinsip antrean (Queue) dalam ilmu informatika di mana elemen pertama yang masuk akan diproses keluar pertama kali." },
+        { term: "Hiperbola", def: "Gaya bahasa (majas) yang menyatakan sesuatu secara berlebihan untuk memberikan efek penekanan dramatis." },
+        { term: "Inflasi", def: "Gejala kenaikan harga barang dan jasa secara umum serta terus menerus yang menurunkan daya beli uang." },
+        { term: "Hukum Newton II", def: "Percepatan suatu benda sebanding dengan resultan gaya yang bekerja dan berbanding terbalik dengan massanya (F = m × a)." },
+        { term: "Alveolus", def: "Kantung kecil di ujung bronkiolus paru-paru tempat terjadinya pertukaran gas oksigen (O2) dan karbon dioksida (CO2)." },
+        { term: "Kloroplas", def: "Organel pada sel tumbuhan dan alga yang mengandung klorofil untuk menangkap cahaya matahari dalam proses fotosintesis." },
+        { term: "Trias Politica", def: "Pemisahan kekuasaan negara menjadi tiga cabang mandiri: Eksekutif (pelaksana), Legislatif (pembuat UU), dan Yudikatif (peradilan)." },
+        { term: "Endoterm", def: "Reaksi kimia yang menyerap kalor dari lingkungan sehingga suhu lingkungan mengalami penurunan." },
+        { term: "Hipotenusa", def: "Sisi terpanjang pada segitiga siku-siku yang berhadapan langsung dengan sudut siku-siku 90 derajat." },
+        { term: "Garis Wallace", def: "Garis khayal biogeografi yang memisahkan persebaran fauna tipe Asiatis dengan tipe fauna Peralihan di Indonesia." },
+        { term: "Ius Soli", def: "Asas kewarganegaraan yang menetapkan status warga negara seseorang berdasarkan tempat atau negara ia dilahirkan." },
+        { term: "Katalisator", def: "Zat yang mempercepat laju terjadinya reaksi kimia tanpa mengalami perubahan kimia permanen pada akhir reaksi." },
+        { term: "Sublimasi", def: "Perubahan wujud zat secara langsung dari bentuk padat menjadi gas tanpa melewati wujud cair terlebih dahulu." },
+        { term: "Opportunity Cost", def: "Biaya peluang, yaitu manfaat terbaik yang dikorbankan saat seseorang memilih suatu alternatif tindakan ekonomi lain." },
+        { term: "Machine Learning", def: "Cabang kecerdasan buatan (AI) yang memungkinkan sistem komputer belajar mandiri dari pola data tanpa diprogram secara kaku." }
+      ]
+    };
+
+    /* =================================================================
+       CORE GAME HUB ARCHITECTURE & LOGIC CONTROLLER
+       ================================================================= */
+    class EduPlayHub {
+      constructor() {
+        this.audio = new AudioEngine();
+        this.totalXp = 0;
+        this.activeGameId = null;
+        this.selectedGrade = 'all'; // 'all', 'sd', 'smp', 'smk'
+
+        // Sub-game specific runtime states
+        this.state = {
+          tfIdx: 0, tfScore: 0,
+          wsIdx: 0, wsScore: 0, wsCurrentWord: "", wsPlacedLetters: [], wsTiles: [],
+          mpIdx: 0, mpScore: 0,
+          giIdx: 0, giScore: 0,
+          scRound: 0, scScore: 0, scItemIdx: 0,
+          swScore: 0, swAngle: 0, swSpinning: false,
+          tlIdx: 0, tlScore: 0, tlCurrentSteps: [],
+          labVolt: 9, labRes: 10, labSwitchOn: false,
+          tcIdx: 0, tcScores: [0, 0, 0, 0],
+          gcIdx: 0, gcScore: 0, gcRevealedClues: 1,
+          storyStep: "step1",
+          fcIdx: 0, fcMasteredCount: 0, fcFlipped: false
+        };
+
+        this.init();
+      }
+
+      init() {
+        this.updateXpDisplay();
+        this.initWheelCanvas();
+      }
+
+      setGrade(grade) {
+        this.audio.playClick();
+        this.selectedGrade = grade;
+        const gradeLabels = {
+          all: "SEMUA JENJANG",
+          sd: "MI / SD",
+          smp: "SMP / MTs",
+          smk: "SMA / SMK"
+        };
+        const badge = document.getElementById("activeGradeTag");
+        if (badge) badge.textContent = gradeLabels[grade] || "SEMUA JENJANG";
+
+        ['all', 'sd', 'smp', 'smk'].forEach(g => {
+          const btn = document.getElementById(`gradeBtn-${g}`);
+          if (btn) {
+            if (g === grade) {
+              btn.className = "px-3.5 py-1.5 rounded-xl text-xs font-bold transition shadow border border-amber-400 bg-amber-500 text-slate-950";
+            } else {
+              btn.className = "px-3.5 py-1.5 rounded-xl text-xs font-bold transition shadow border border-slate-700 bg-slate-900 text-slate-300 hover:border-amber-400/50 hover:text-amber-300";
+            }
+          }
+        });
+
+        this.showToast(`Jenjang diatur ke: ${gradeLabels[grade]}`, "🎓");
+      }
+
+      filterByGrade(items) {
+        if (!items || !Array.isArray(items)) return [];
+        if (!this.selectedGrade || this.selectedGrade === 'all') return items;
+        
+        // Strictly filter items that contain the exact requested grade tag ('sd', 'smp', or 'smk')
+        const filtered = items.filter(item => {
+          if (!item.grade) return false;
+          if (Array.isArray(item.grade)) {
+            return item.grade.includes(this.selectedGrade);
+          }
+          return item.grade === this.selectedGrade;
+        });
+
+        // If specific grade has questions, return strictly that grade.
+        // If empty, only fallback if no items at all exist to avoid runtime errors.
+        return filtered.length > 0 ? filtered : items;
+      }
+
+      toggleAudio() {
+        this.audio.enabled = !this.audio.enabled;
+        const icon = document.getElementById("soundIcon");
+        if (this.audio.enabled) {
+          icon.textContent = "🔊";
+          this.audio.init();
+          this.showToast("Suara audio diaktifkan", "🔊");
+        } else {
+          icon.textContent = "🔇";
+          this.showToast("Suara audio diheningkan", "🔇");
+        }
+      }
+
+      showToast(msg, icon = "✨") {
+        const toast = document.getElementById("toast");
+        document.getElementById("toastIcon").textContent = icon;
+        document.getElementById("toastMsg").textContent = msg;
+        toast.classList.remove("translate-y-24", "opacity-0");
+        clearTimeout(this._toastTimer);
+        this._toastTimer = setTimeout(() => {
+          toast.classList.add("translate-y-24", "opacity-0");
+        }, 2200);
+      }
+
+      addXp(amount) {
+        this.totalXp += amount;
+        this.updateXpDisplay();
+      }
+
+      updateXpDisplay() {
+        document.getElementById("hubTotalXp").textContent = `${this.totalXp} XP`;
+      }
+
+      openMainMenu() {
+        this.audio.playClick();
+        this.activeGameId = null;
+        document.getElementById("view-hub").classList.remove("hidden");
+        document.getElementById("gameplayContainer").classList.add("hidden");
+        document.getElementById("activeGameTag").textContent = "MENU UTAMA";
+
+        // Hide all sub-games
+        const games = ["truefalse", "wordscramble", "mathpuzzle", "guessimage", "sortcategory", "spinwheel", "timeline", "virtuallab", "teamchallenge", "guessclue", "storychoice", "flashcards"];
+        games.forEach(g => {
+          const el = document.getElementById(`game-${g}`);
+          if (el) el.classList.add("hidden");
+        });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      launchGame(gameId) {
+        this.audio.init();
+        this.audio.playClick();
+        this.activeGameId = gameId;
+
+        document.getElementById("view-hub").classList.add("hidden");
+        document.getElementById("gameplayContainer").classList.remove("hidden");
+
+        const games = ["truefalse", "wordscramble", "mathpuzzle", "guessimage", "sortcategory", "spinwheel", "timeline", "virtuallab", "teamchallenge", "guessclue", "storychoice", "flashcards"];
+        games.forEach(g => {
+          const el = document.getElementById(`game-${g}`);
+          if (el) {
+            if (g === gameId) el.classList.remove("hidden");
+            else el.classList.add("hidden");
+          }
+        });
+
+        // Set top badge
+        const badgeMap = {
+          truefalse: "BENAR ATAU SALAH",
+          wordscramble: "SUSUN KATA",
+          mathpuzzle: "MATH PUZZLE",
+          guessimage: "TEBAK GAMBAR",
+          sortcategory: "SORTIR KATEGORI",
+          spinwheel: "RODA KEBERUNTUNGAN",
+          timeline: "SUSUN KRONOLOGI",
+          virtuallab: "VIRTUAL LAB",
+          teamchallenge: "TEAM CHALLENGE",
+          guessclue: "TEBAK ISTILAH",
+          storychoice: "STORY CHOICE",
+          flashcards: "FLASHCARD MASTER"
+        };
+        document.getElementById("activeGameTag").textContent = badgeMap[gameId] || "BERMAIN";
+
+        // Game Launch initializers
+        if (gameId === "truefalse") this.initTrueFalse();
+        if (gameId === "wordscramble") this.initWordScramble();
+        if (gameId === "mathpuzzle") this.initMathPuzzle();
+        if (gameId === "guessimage") this.initGuessImage();
+        if (gameId === "sortcategory") this.initSortCategory();
+        if (gameId === "spinwheel") this.initSpinWheel();
+        if (gameId === "timeline") this.initTimeline();
+        if (gameId === "virtuallab") this.initVirtualLab();
+        if (gameId === "teamchallenge") this.initTeamChallenge();
+        if (gameId === "guessclue") this.initGuessClue();
+        if (gameId === "storychoice") this.initStoryChoice();
+        if (gameId === "flashcards") this.initFlashcards();
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      /* =================================================================
+         GAME 9: BENAR ATAU SALAH
+         ================================================================= */
+      initTrueFalse() {
+        this.state.tfIdx = 0;
+        this.state.tfScore = 0;
+        this.state.tfItems = this.filterByGrade(GAME_DATA.truefalse);
+        this.loadTrueFalseQuestion();
+      }
+
+      loadTrueFalseQuestion() {
+        const items = this.state.tfItems;
+        const item = items[this.state.tfIdx];
+        if (!item) return;
+        document.getElementById("tfProgress").textContent = `Soal ${this.state.tfIdx + 1} / ${items.length}`;
+        document.getElementById("tfScore").textContent = `Skor: ${this.state.tfScore}`;
+        document.getElementById("tfQuestionText").textContent = `"${item.q}"`;
+        document.getElementById("tfExplanation").textContent = "";
+      }
+
+      answerTrueFalse(userChoice) {
+        const items = this.state.tfItems;
+        const item = items[this.state.tfIdx];
+        const isCorrect = (userChoice === item.correct);
+
+        if (isCorrect) {
+          this.audio.playCorrect();
+          this.state.tfScore += 20;
+          this.addXp(20);
+          this.showToast("Tepat Sekali! Jawaban Benar (+20 XP)", "🎉");
+        } else {
+          this.audio.playWrong();
+          this.showToast("Kurang tepat!", "❌");
+        }
+
+        document.getElementById("tfExplanation").textContent = `💡 Penjelasan: ${item.exp}`;
+
+        setTimeout(() => {
+          this.state.tfIdx++;
+          if (this.state.tfIdx < items.length) {
+            this.loadTrueFalseQuestion();
+          } else {
+            this.audio.playVictory();
+            this.showToast(`Selesai! Skor akhir: ${this.state.tfScore}`, "🏆");
+            setTimeout(() => this.openMainMenu(), 2000);
+          }
+        }, 1500);
+      }
+
+      /* =================================================================
+         GAME 10: SUSUN KATA
+         ================================================================= */
+      initWordScramble() {
+        this.state.wsIdx = 0;
+        this.state.wsScore = 0;
+        this.state.wsItems = this.filterByGrade(GAME_DATA.wordscramble);
+        this.loadWordScramble();
+      }
+
+      loadWordScramble() {
+        const items = this.state.wsItems;
+        const item = items[this.state.wsIdx];
+        if (!item) return;
+        this.state.wsCurrentWord = item.word;
+        this.state.wsPlacedLetters = [];
+
+        document.getElementById("wsProgress").textContent = `Kata ${this.state.wsIdx + 1} / ${items.length}`;
+        document.getElementById("wsScore").textContent = `Skor: ${this.state.wsScore}`;
+        document.getElementById("wsClueText").textContent = item.clue;
+
+        // Scramble letters
+        const letters = item.word.split("");
+        for (let i = letters.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [letters[i], letters[j]] = [letters[j], letters[i]];
+        }
+        this.state.wsTiles = letters.map((char, id) => ({ id, char, used: false }));
+
+        this.renderWordScrambleUI();
+      }
+
+      renderWordScrambleUI() {
+        const slotsContainer = document.getElementById("wsAnswerSlots");
+        const tilesContainer = document.getElementById("wsScrambleTiles");
+        slotsContainer.innerHTML = "";
+        tilesContainer.innerHTML = "";
+
+        // Slots
+        for (let i = 0; i < this.state.wsCurrentWord.length; i++) {
+          const letter = this.state.wsPlacedLetters[i] || "";
+          const box = document.createElement("div");
+          box.className = "w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-slate-950 border-2 border-cyan-500/50 flex items-center justify-center font-display font-black text-lg text-amber-300 shadow-inner";
+          box.textContent = letter ? letter.char : "";
+          if (letter) {
+            box.onclick = () => this.unplaceLetter(i);
+            box.title = "Klik untuk membatalkan";
+          }
+          slotsContainer.appendChild(box);
+        }
+
+        // Available Scrambled Tiles
+        this.state.wsTiles.forEach((tile) => {
+          const btn = document.createElement("button");
+          btn.className = `w-10 h-10 sm:w-11 sm:h-11 rounded-xl font-display font-bold text-sm shadow transition ${tile.used ? 'opacity-20 cursor-not-allowed bg-slate-800' : 'bg-cyan-600 hover:bg-cyan-500 text-white active:scale-95'}`;
+          btn.textContent = tile.char;
+          btn.disabled = tile.used;
+          btn.onclick = () => this.placeLetter(tile);
+          tilesContainer.appendChild(btn);
+        });
+      }
+
+      placeLetter(tile) {
+        if (tile.used) return;
+        this.audio.playClick();
+        tile.used = true;
+        this.state.wsPlacedLetters.push(tile);
+        this.renderWordScrambleUI();
+      }
+
+      unplaceLetter(slotIdx) {
+        const removed = this.state.wsPlacedLetters.splice(slotIdx, 1)[0];
+        if (removed) {
+          this.audio.playClick();
+          removed.used = false;
+          this.renderWordScrambleUI();
+        }
+      }
+
+      clearWordScramble() {
+        this.audio.playClick();
+        this.state.wsTiles.forEach(t => t.used = false);
+        this.state.wsPlacedLetters = [];
+        this.renderWordScrambleUI();
+      }
+
+      checkWordScramble() {
+        const assembled = this.state.wsPlacedLetters.map(t => t.char).join("");
+        if (assembled === this.state.wsCurrentWord) {
+          this.audio.playCorrect();
+          this.state.wsScore += 25;
+          this.addXp(25);
+          this.showToast(`Kata "${this.state.wsCurrentWord}" Tersusun Sempurna! (+25 XP)`, "🎉");
+
+          setTimeout(() => {
+            this.state.wsIdx++;
+            if (this.state.wsIdx < this.state.wsItems.length) {
+              this.loadWordScramble();
+            } else {
+              this.audio.playVictory();
+              this.showToast("Semua kata berhasil dipecahkan!", "🏆");
+              setTimeout(() => this.openMainMenu(), 1800);
+            }
+          }, 1200);
+        } else {
+          this.audio.playWrong();
+          this.showToast("Susunan huruf belum sesuai, coba lagi!", "⚠️");
+        }
+      }
+
+      /* =================================================================
+         GAME 11: MATH PUZZLE
+         ================================================================= */
+      initMathPuzzle() {
+        this.state.mpIdx = 0;
+        this.state.mpScore = 0;
+        this.state.mpItems = this.filterByGrade(GAME_DATA.mathpuzzle);
+        this.loadMathPuzzle();
+      }
+
+      loadMathPuzzle() {
+        const items = this.state.mpItems;
+        const p = items[this.state.mpIdx];
+        if (!p) return;
+        document.getElementById("mpLevelText").textContent = `Teka-teki ${this.state.mpIdx + 1} / ${items.length}`;
+        document.getElementById("mpScore").textContent = `Skor: ${this.state.mpScore}`;
+        document.getElementById("mpEquationBox").textContent = p.eq;
+        document.getElementById("mpHint").textContent = p.hint;
+
+        const container = document.getElementById("mpOptionsGrid");
+        container.innerHTML = "";
+
+        p.options.forEach(opt => {
+          const btn = document.createElement("button");
+          btn.className = "py-3.5 px-4 rounded-xl bg-slate-950 border border-amber-500/40 hover:bg-amber-600 hover:text-slate-950 font-display font-bold text-lg text-white shadow transition active:scale-95";
+          btn.textContent = opt;
+          btn.onclick = () => this.answerMathPuzzle(opt);
+          container.appendChild(btn);
+        });
+      }
+
+      answerMathPuzzle(selectedVal) {
+        const p = this.state.mpItems[this.state.mpIdx];
+        if (selectedVal === p.answer) {
+          this.audio.playCorrect();
+          this.state.mpScore += 20;
+          this.addXp(20);
+          this.showToast("Jawaban Puzzle Benar! (+20 XP)", "⚡");
+
+          setTimeout(() => {
+            this.state.mpIdx++;
+            if (this.state.mpIdx < this.state.mpItems.length) {
+              this.loadMathPuzzle();
+            } else {
+              this.audio.playVictory();
+              this.showToast("Semua teka-teki logika matematika terpecahkan!", "🏆");
+              setTimeout(() => this.openMainMenu(), 1800);
+            }
+          }, 1200);
+        } else {
+          this.audio.playWrong();
+          this.showToast("Perhitungan kurang tepat!", "❌");
+        }
+      }
+
+      /* =================================================================
+         GAME 12: TEBAK GAMBAR
+         ================================================================= */
+      initGuessImage() {
+        this.state.giIdx = 0;
+        this.state.giScore = 0;
+        this.state.giItems = this.filterByGrade(GAME_DATA.guessimage);
+        this.loadGuessImage();
+      }
+
+      loadGuessImage() {
+        const items = this.state.giItems;
+        const item = items[this.state.giIdx];
+        if (!item) return;
+        document.getElementById("giProgress").textContent = `Gambar ${this.state.giIdx + 1} / ${items.length}`;
+        document.getElementById("giScore").textContent = `Skor: ${this.state.giScore}`;
+        document.getElementById("giSvgContainer").innerHTML = item.svg;
+
+        const container = document.getElementById("giOptionsGrid");
+        container.innerHTML = "";
+
+        item.options.forEach((opt, idx) => {
+          const btn = document.createElement("button");
+          btn.className = "py-3 px-4 rounded-xl bg-slate-950 border border-rose-500/40 hover:bg-rose-600 text-white font-semibold text-xs sm:text-sm shadow transition active:scale-95";
+          btn.textContent = opt;
+          btn.onclick = () => this.answerGuessImage(idx);
+          container.appendChild(btn);
+        });
+      }
+
+      answerGuessImage(selectedIdx) {
+        const item = this.state.giItems[this.state.giIdx];
+        if (selectedIdx === item.correct) {
+          this.audio.playCorrect();
+          this.state.giScore += 20;
+          this.addXp(20);
+          this.showToast(`Tebakan Tepat: "${item.title}"! (+20 XP)`, "🎉");
+
+          setTimeout(() => {
+            this.state.giIdx++;
+            if (this.state.giIdx < this.state.giItems.length) {
+              this.loadGuessImage();
+            } else {
+              this.audio.playVictory();
+              this.showToast("Hebat, semua gambar berhasil diidentifikasi!", "🏆");
+              setTimeout(() => this.openMainMenu(), 1800);
+            }
+          }, 1200);
+        } else {
+          this.audio.playWrong();
+          this.showToast("Bukan objek itu, perhatikan lagi!", "❌");
+        }
+      }
+
+      /* =================================================================
+         GAME 13: SORTIR KATEGORI
+         ================================================================= */
+      initSortCategory() {
+        this.state.scRound = 0;
+        this.state.scScore = 0;
+        this.state.scItemIdx = 0;
+        this.state.scRounds = this.filterByGrade(GAME_DATA.sortcategory);
+        this.loadSortCategoryRound();
+      }
+
+      loadSortCategoryRound() {
+        const rounds = this.state.scRounds;
+        const roundData = rounds[this.state.scRound % rounds.length];
+        this.state.scItemIdx = 0;
+        this.renderSortCategoryUI(roundData);
+      }
+
+      renderSortCategoryUI(roundData) {
+        const rounds = this.state.scRounds;
+        document.getElementById("scProgress").textContent = `Putaran ${this.state.scRound + 1} / ${rounds.length}`;
+        document.getElementById("scScore").textContent = `Skor: ${this.state.scScore}`;
+
+        const currentItem = roundData.items[this.state.scItemIdx];
+        const remaining = roundData.items.length - this.state.scItemIdx;
+
+        if (!currentItem) {
+          this.audio.playVictory();
+          this.state.scRound++;
+          if (this.state.scRound < rounds.length) {
+            this.showToast("Kategori pertama tuntas! Lanjut putaran berikutnya!", "⭐");
+            this.loadSortCategoryRound();
+          } else {
+            this.showToast("Semua kategori berhasil disortir!", "🏆");
+            setTimeout(() => this.openMainMenu(), 1800);
+          }
+          return;
+        }
+
+        document.getElementById("scCurrentItem").textContent = currentItem.name;
+        document.getElementById("scRemainingCount").textContent = `Sisa ${remaining} item lagi`;
+
+        const binsContainer = document.getElementById("scBinsContainer");
+        binsContainer.innerHTML = "";
+
+        roundData.categories.forEach(catName => {
+          const bin = document.createElement("button");
+          bin.className = "p-4 rounded-2xl bg-slate-950 border-2 border-indigo-500/40 hover:border-indigo-400 hover:bg-indigo-950/40 text-center transition active:scale-95 shadow";
+          bin.innerHTML = `
+            <span class="text-2xl block mb-1">📥</span>
+            <span class="text-xs font-bold text-indigo-300">${catName}</span>
+          `;
+          bin.onclick = () => this.sortCurrentItemToCategory(catName, currentItem, roundData);
+          binsContainer.appendChild(bin);
+        });
+      }
+
+      sortCurrentItemToCategory(chosenCategory, currentItem, roundData) {
+        if (chosenCategory === currentItem.cat) {
+          this.audio.playCorrect();
+          this.state.scScore += 15;
+          this.addXp(15);
+          this.showToast(`Benar! ${currentItem.name} masuk ke ${chosenCategory}`, "✅");
+        } else {
+          this.audio.playWrong();
+          this.showToast(`Kurang tepat, ${currentItem.name} tergolong ${currentItem.cat}!`, "❌");
+        }
+        this.state.scItemIdx++;
+        this.renderSortCategoryUI(roundData);
+      }
+
+      /* =================================================================
+         GAME 14: RODA KEBERUNTUNGAN
+         ================================================================= */
+      initSpinWheel() {
+        this.state.swScore = 0;
+        this.state.swAngle = 0;
+        this.state.swSpinning = false;
+        document.getElementById("swScore").textContent = `Skor: ${this.state.swScore}`;
+        document.getElementById("swQuestionBox").classList.add("hidden");
+        this.drawWheel();
+      }
+
+      initWheelCanvas() {
+        this.drawWheel();
+      }
+
+      drawWheel() {
+        const canvas = document.getElementById("wheelCanvas");
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d");
+        const slices = GAME_DATA.spinwheel;
+        const numSlices = slices.length;
+        const sliceAngle = (2 * Math.PI) / numSlices;
+        const radius = canvas.width / 2;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        slices.forEach((slice, i) => {
+          const startAngle = this.state.swAngle + i * sliceAngle;
+          const endAngle = startAngle + sliceAngle;
+
+          ctx.beginPath();
+          ctx.moveTo(radius, radius);
+          ctx.arc(radius, radius, radius - 4, startAngle, endAngle);
+          ctx.fillStyle = slice.color;
+          ctx.fill();
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = "#0f172a";
+          ctx.stroke();
+
+          // Text label
+          ctx.save();
+          ctx.translate(radius, radius);
+          ctx.rotate(startAngle + sliceAngle / 2);
+          ctx.textAlign = "right";
+          ctx.fillStyle = "#ffffff";
+          ctx.font = "bold 13px 'Plus Jakarta Sans', sans-serif";
+          ctx.fillText(slice.label, radius - 16, 5);
+          ctx.restore();
+        });
+
+        // Center hub
+        ctx.beginPath();
+        ctx.arc(radius, radius, 22, 0, 2 * Math.PI);
+        ctx.fillStyle = "#0f172a";
+        ctx.fill();
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = "#f59e0b";
+        ctx.stroke();
+      }
+
+      spinTheWheel() {
+        if (this.state.swSpinning) return;
+        this.state.swSpinning = true;
+        document.getElementById("swSpinBtn").disabled = true;
+        document.getElementById("swQuestionBox").classList.add("hidden");
+
+        const targetRotations = 5 + Math.random() * 4;
+        const totalAngleChange = targetRotations * 2 * Math.PI;
+        const duration = 3000;
+        const start = performance.now();
+        const startAngle = this.state.swAngle;
+
+        const animateSpin = (now) => {
+          const elapsed = now - start;
+          const progress = Math.min(1, elapsed / duration);
+          // Ease-out cubic
+          const easeProgress = 1 - Math.pow(1 - progress, 3);
+
+          this.state.swAngle = startAngle + totalAngleChange * easeProgress;
+          this.drawWheel();
+
+          if (Math.floor(elapsed) % 150 < 20) {
+            this.audio.playSpin();
+          }
+
+          if (progress < 1) {
+            requestAnimationFrame(animateSpin);
+          } else {
+            this.state.swSpinning = false;
+            document.getElementById("swSpinBtn").disabled = false;
+            this.resolveWheelLanding();
+          }
+        };
+        requestAnimationFrame(animateSpin);
+      }
+
+      resolveWheelLanding() {
+        const slices = GAME_DATA.spinwheel;
+        const numSlices = slices.length;
+        const sliceAngle = (2 * Math.PI) / numSlices;
+        
+        // Indicator needle is pointing from top (angle 3pi/2)
+        const normalized = (this.state.swAngle + (3 * Math.PI) / 2) % (2 * Math.PI);
+        const winningIdx = Math.floor((2 * Math.PI - normalized) / sliceAngle) % numSlices;
+        const winner = slices[winningIdx];
+
+        this.audio.playCorrect();
+        this.showToast(`Roda Berhenti di Kategori: ${winner.label}!`, "🎯");
+
+        // Show challenge
+        const qBox = document.getElementById("swQuestionBox");
+        document.getElementById("swCategoryBadge").textContent = `Kategori ${winner.label}`;
+        document.getElementById("swQuestionText").textContent = winner.q;
+
+        const grid = document.getElementById("swOptionsGrid");
+        grid.innerHTML = "";
+        winner.opts.forEach((opt, idx) => {
+          const btn = document.createElement("button");
+          btn.className = "p-2.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-fuchsia-400 text-xs font-semibold text-white transition active:scale-95";
+          btn.textContent = opt;
+          btn.onclick = () => {
+            if (idx === winner.correct) {
+              this.audio.playCorrect();
+              this.state.swScore += 100;
+              this.addXp(100);
+              this.showToast("Jawaban Roda Tepat! (+100 XP)", "🎉");
+            } else {
+              this.audio.playWrong();
+              this.showToast("Jawaban roda kurang tepat!", "❌");
+            }
+            document.getElementById("swScore").textContent = `Skor: ${this.state.swScore}`;
+            qBox.classList.add("hidden");
+          };
+          grid.appendChild(btn);
+        });
+
+        qBox.classList.remove("hidden");
+      }
+
+      /* =================================================================
+         GAME 15: SUSUN KRONOLOGI
+         ================================================================= */
+      initTimeline() {
+        this.state.tlIdx = 0;
+        this.state.tlScore = 0;
+        this.loadTimeline();
+      }
+
+      loadTimeline() {
+        const t = GAME_DATA.timeline[this.state.tlIdx];
+        document.getElementById("tlProgress").textContent = `Tahap ${this.state.tlIdx + 1} / ${GAME_DATA.timeline.length}`;
+        document.getElementById("tlScore").textContent = `Skor: ${this.state.tlScore}`;
+        document.getElementById("tlTopicTitle").textContent = t.topic;
+
+        // Scramble steps for player to reorder
+        const scrambled = [...t.steps].sort(() => Math.random() - 0.5);
+        this.state.tlCurrentSteps = scrambled;
+        this.renderTimelineItems();
+      }
+
+      renderTimelineItems() {
+        const container = document.getElementById("tlItemsList");
+        container.innerHTML = "";
+
+        this.state.tlCurrentSteps.forEach((stepText, idx) => {
+          const row = document.createElement("div");
+          row.className = "p-3 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between gap-3 text-xs sm:text-sm";
+          row.innerHTML = `
+            <div class="flex items-center gap-2.5 truncate">
+              <span class="w-6 h-6 rounded-lg bg-violet-950 border border-violet-500/40 text-violet-300 font-bold flex items-center justify-center shrink-0 text-xs">${idx + 1}</span>
+              <span class="text-white font-medium truncate">${stepText}</span>
+            </div>
+            <div class="flex items-center gap-1 shrink-0">
+              <button onclick="gameHub.moveTimelineStep(${idx}, -1)" ${idx === 0 ? 'disabled class="opacity-20"' : ''} class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold">▲</button>
+              <button onclick="gameHub.moveTimelineStep(${idx}, 1)" ${idx === this.state.tlCurrentSteps.length - 1 ? 'disabled class="opacity-20"' : ''} class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold">▼</button>
+            </div>
+          `;
+          container.appendChild(row);
+        });
+      }
+
+      moveTimelineStep(index, direction) {
+        this.audio.playClick();
+        const target = index + direction;
+        if (target < 0 || target >= this.state.tlCurrentSteps.length) return;
+        const temp = this.state.tlCurrentSteps[index];
+        this.state.tlCurrentSteps[index] = this.state.tlCurrentSteps[target];
+        this.state.tlCurrentSteps[target] = temp;
+        this.renderTimelineItems();
+      }
+
+      checkTimelineOrder() {
+        const targetOrder = GAME_DATA.timeline[this.state.tlIdx].steps;
+        const isMatch = this.state.tlCurrentSteps.every((s, i) => s === targetOrder[i]);
+
+        if (isMatch) {
+          this.audio.playCorrect();
+          this.state.tlScore += 30;
+          this.addXp(30);
+          this.showToast("Kronologi Tepat Berurutan! (+30 XP)", "🎉");
+
+          setTimeout(() => {
+            this.state.tlIdx++;
+            if (this.state.tlIdx < GAME_DATA.timeline.length) {
+              this.loadTimeline();
+            } else {
+              this.audio.playVictory();
+              this.showToast("Semua kronologi berhasil diurutkan!", "🏆");
+              setTimeout(() => this.openMainMenu(), 1800);
+            }
+          }, 1400);
+        } else {
+          this.audio.playWrong();
+          this.showToast("Urutan belum tepat, perhatikan kembali alurnya!", "❌");
+        }
+      }
+
+      /* =================================================================
+         GAME 16: VIRTUAL LAB (RANGKAIAN LISTRIK)
+         ================================================================= */
+      initVirtualLab() {
+        this.state.labVolt = 9;
+        this.state.labRes = 10;
+        this.state.labSwitchOn = false;
+        this.updateLabPhysics();
+      }
+
+      toggleLabSwitch() {
+        this.audio.playClick();
+        this.state.labSwitchOn = !this.state.labSwitchOn;
+        this.updateLabPhysics();
+      }
+
+      updateLabPhysics() {
+        const voltSlider = document.getElementById("labVoltSlider");
+        const resSlider = document.getElementById("labResSlider");
+        if (voltSlider) this.state.labVolt = parseFloat(voltSlider.value);
+        if (resSlider) this.state.labRes = parseFloat(resSlider.value);
+
+        document.getElementById("labVoltText").textContent = `${this.state.labVolt.toFixed(1)} V`;
+        document.getElementById("voltSliderVal").textContent = `${this.state.labVolt} V`;
+        document.getElementById("resSliderVal").textContent = `${this.state.labRes} Ω`;
+
+        const switchStatus = document.getElementById("labSwitchStatus");
+        const bulbGlow = document.getElementById("labBulbGlow");
+        const bulbStatus = document.getElementById("labBulbStatus");
+        const currentElec = document.getElementById("labCurrentElectrons");
+
+        if (this.state.labSwitchOn) {
+          switchStatus.textContent = "TERHUBUNG (ON)";
+          switchStatus.className = "text-[10px] font-bold text-emerald-400";
+          
+          // Ohm's Law: I = V / R
+          const current = this.state.labVolt / this.state.labRes;
+          document.getElementById("meterVolt").textContent = `${this.state.labVolt.toFixed(1)} V`;
+          document.getElementById("meterRes").textContent = `${this.state.labRes.toFixed(0)} Ω`;
+          document.getElementById("meterCurrent").textContent = `${current.toFixed(2)} A`;
+
+          // Bulb Brightness calculation
+          const brightness = Math.min(1.8, current * 1.2);
+          bulbGlow.style.boxShadow = `0 0 ${brightness * 40}px rgba(250, 204, 21, ${brightness})`;
+          bulbGlow.style.backgroundColor = "rgba(250, 204, 21, 0.25)";
+          bulbStatus.textContent = `Menyala Terang (${(current * this.state.labVolt).toFixed(1)} W)`;
+          bulbStatus.className = "text-[10px] font-bold text-amber-300";
+          if (currentElec) currentElec.style.animationDuration = `${Math.max(0.2, 1.5 - current)}s`;
+        } else {
+          switchStatus.textContent = "TERPUTUS (OFF)";
+          switchStatus.className = "text-[10px] font-bold text-rose-400";
+          document.getElementById("meterVolt").textContent = `0.0 V`;
+          document.getElementById("meterRes").textContent = `${this.state.labRes.toFixed(0)} Ω`;
+          document.getElementById("meterCurrent").textContent = `0.00 A`;
+
+          bulbGlow.style.boxShadow = "none";
+          bulbGlow.style.backgroundColor = "transparent";
+          bulbStatus.textContent = "Padam";
+          bulbStatus.className = "text-[10px] font-bold text-slate-500";
+        }
+      }
+
+      /* =================================================================
+         GAME 17: TEAM CHALLENGE
+         ================================================================= */
+      initTeamChallenge() {
+        this.state.tcIdx = 0;
+        this.state.tcScores = [0, 0, 0, 0];
+        this.updateTeamScoresUI();
+        this.loadTeamQuestion();
+      }
+
+      updateTeamScoresUI() {
+        for (let i = 0; i < 4; i++) {
+          const el = document.getElementById(`teamScore-${i}`);
+          if (el) el.textContent = this.state.tcScores[i];
+        }
+      }
+
+      scoreTeam(teamIdx, pts) {
+        this.audio.playCorrect();
+        this.state.tcScores[teamIdx] += pts;
+        this.addXp(pts);
+        this.updateTeamScoresUI();
+        const teamNames = ["Tim Merah", "Tim Biru", "Tim Hijau", "Tim Kuning"];
+        this.showToast(`+${pts} Poin untuk ${teamNames[teamIdx]}!`, "🏆");
+      }
+
+      loadTeamQuestion() {
+        const item = GAME_DATA.teamchallenge[this.state.tcIdx];
+        document.getElementById("tcRoundText").textContent = `Soal ${this.state.tcIdx + 1} / ${GAME_DATA.teamchallenge.length}`;
+        document.getElementById("tcQuestionText").textContent = item.q;
+        const ansEl = document.getElementById("tcAnswerRevealed");
+        ansEl.classList.add("hidden");
+        ansEl.textContent = `Kunci Jawaban: ${item.a}`;
+      }
+
+      revealTeamAnswer() {
+        this.audio.playClick();
+        document.getElementById("tcAnswerRevealed").classList.remove("hidden");
+      }
+
+      nextTeamQuestion() {
+        this.audio.playClick();
+        this.state.tcIdx = (this.state.tcIdx + 1) % GAME_DATA.teamchallenge.length;
+        this.loadTeamQuestion();
+      }
+
+      /* =================================================================
+         GAME 18: TEBAK ISTILAH (3 CLUES)
+         ================================================================= */
+      initGuessClue() {
+        this.state.gcIdx = 0;
+        this.state.gcScore = 0;
+        this.loadGuessClue();
+      }
+
+      loadGuessClue() {
+        const item = GAME_DATA.guessclue[this.state.gcIdx];
+        this.state.gcRevealedClues = 1;
+
+        document.getElementById("gcProgress").textContent = `Konsep ${this.state.gcIdx + 1} / ${GAME_DATA.guessclue.length}`;
+        document.getElementById("gcScore").textContent = `Skor: ${this.state.gcScore}`;
+
+        this.renderCluesUI();
+
+        const optGrid = document.getElementById("gcOptionsGrid");
+        optGrid.innerHTML = "";
+
+        item.options.forEach((opt, idx) => {
+          const btn = document.createElement("button");
+          btn.className = "p-3 rounded-xl bg-slate-950 border border-yellow-500/40 hover:bg-yellow-600 hover:text-slate-950 font-bold text-xs sm:text-sm text-white transition active:scale-95";
+          btn.textContent = opt;
+          btn.onclick = () => this.answerGuessClue(idx);
+          optGrid.appendChild(btn);
+        });
+      }
+
+      renderCluesUI() {
+        const item = GAME_DATA.guessclue[this.state.gcIdx];
+        const container = document.getElementById("gcCluesContainer");
+        container.innerHTML = "";
+
+        item.clues.forEach((clueText, i) => {
+          const isRevealed = (i < this.state.gcRevealedClues);
+          const box = document.createElement("div");
+          box.className = `p-3 rounded-xl border text-xs sm:text-sm transition ${isRevealed ? 'bg-slate-950 text-slate-200 border-yellow-500/40' : 'bg-slate-900/40 text-slate-500 border-slate-800'}`;
+          box.innerHTML = isRevealed ? clueText : `<span class="italic">🔒 Petunjuk #${i + 1} terkunci (Buka untuk petunjuk tambahan)</span>`;
+          container.appendChild(box);
+        });
+
+        if (this.state.gcRevealedClues < 3) {
+          const unlockBtn = document.createElement("button");
+          unlockBtn.className = "w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-yellow-300";
+          unlockBtn.textContent = `🔓 Buka Petunjuk #${this.state.gcRevealedClues + 1}`;
+          unlockBtn.onclick = () => {
+            this.audio.playClick();
+            this.state.gcRevealedClues++;
+            this.renderCluesUI();
+          };
+          container.appendChild(unlockBtn);
+        }
+      }
+
+      answerGuessClue(selectedIdx) {
+        const item = GAME_DATA.guessclue[this.state.gcIdx];
+        if (selectedIdx === item.correct) {
+          this.audio.playCorrect();
+          // Points decrease if more clues needed (100 for 1 clue, 60 for 2, 30 for 3)
+          const pts = (this.state.gcRevealedClues === 1) ? 100 : (this.state.gcRevealedClues === 2 ? 60 : 30);
+          this.state.gcScore += pts;
+          this.addXp(pts);
+          this.showToast(`Tebakan Istilah Tepat! (+${pts} XP)`, "🎉");
+
+          setTimeout(() => {
+            this.state.gcIdx++;
+            if (this.state.gcIdx < GAME_DATA.guessclue.length) {
+              this.loadGuessClue();
+            } else {
+              this.audio.playVictory();
+              this.showToast("Semua istilah tertebak sempurna!", "🏆");
+              setTimeout(() => this.openMainMenu(), 1800);
+            }
+          }, 1400);
+        } else {
+          this.audio.playWrong();
+          this.showToast("Konsep belum tepat, telaah petunjuk lagi!", "❌");
+        }
+      }
+
+      /* =================================================================
+         GAME 19: STORY CHOICE (PETUALANGAN SAINS)
+         ================================================================= */
+      initStoryChoice() {
+        this.state.storyStep = "step1";
+        this.renderStoryStep();
+      }
+
+      renderStoryStep() {
+        const stepData = GAME_DATA.storychoice[this.state.storyStep];
+        if (!stepData) return;
+
+        document.getElementById("storyIcon").textContent = stepData.icon;
+        document.getElementById("storyHeading").textContent = stepData.title;
+        document.getElementById("storyNarrative").textContent = stepData.text;
+
+        const container = document.getElementById("storyChoicesContainer");
+        container.innerHTML = "";
+
+        stepData.choices.forEach(ch => {
+          const btn = document.createElement("button");
+          btn.className = "w-full p-3.5 rounded-2xl bg-gradient-to-r from-pink-600/30 to-indigo-600/30 hover:from-pink-600/50 hover:to-indigo-600/50 border border-pink-500/40 text-left font-semibold text-xs sm:text-sm text-white transition active:scale-95 flex items-center justify-between";
+          btn.innerHTML = `<span>${ch.text}</span> <span>➔</span>`;
+          btn.onclick = () => {
+            this.audio.playClick();
+            this.addXp(15);
+            this.state.storyStep = ch.next;
+            this.renderStoryStep();
+          };
+          container.appendChild(btn);
+        });
+      }
+
+      /* =================================================================
+         GAME 20: FLASHCARD MASTER (3D FLIP)
+         ================================================================= */
+      initFlashcards() {
+        this.state.fcIdx = 0;
+        this.state.fcMasteredCount = 0;
+        this.state.fcFlipped = false;
+        this.loadFlashcard();
+      }
+
+      loadFlashcard() {
+        const card = GAME_DATA.flashcards[this.state.fcIdx];
+        this.state.fcFlipped = false;
+        const inner = document.getElementById("flashcardInner");
+        inner.classList.remove("rotate-y-180");
+
+        document.getElementById("fcProgress").textContent = `Kartu ${this.state.fcIdx + 1} / ${GAME_DATA.flashcards.length}`;
+        document.getElementById("fcMastered").textContent = `Dikuasai: ${this.state.fcMasteredCount}`;
+        document.getElementById("fcFrontTerm").textContent = card.term;
+        document.getElementById("fcBackDefinition").textContent = card.def;
+      }
+
+      flipFlashcard() {
+        this.audio.playClick();
+        this.state.fcFlipped = !this.state.fcFlipped;
+        const inner = document.getElementById("flashcardInner");
+        if (this.state.fcFlipped) {
+          inner.classList.add("rotate-y-180");
+        } else {
+          inner.classList.remove("rotate-y-180");
+        }
+      }
+
+      rateFlashcard(isMastered) {
+        if (isMastered) {
+          this.audio.playCorrect();
+          this.state.fcMasteredCount++;
+          this.addXp(15);
+          this.showToast("Konsep ditandai Dikuasai! (+15 XP)", "✅");
+        } else {
+          this.audio.playClick();
+          this.showToast("Akan dijadwalkan untuk latihan ulang.", "📝");
+        }
+
+        setTimeout(() => {
+          this.state.fcIdx++;
+          if (this.state.fcIdx < GAME_DATA.flashcards.length) {
+            this.loadFlashcard();
+          } else {
+            this.audio.playVictory();
+            this.showToast(`Selesai! Berhasil menguasai ${this.state.fcMasteredCount} konsep!`, "🏆");
+            setTimeout(() => this.openMainMenu(), 1800);
+          }
+        }, 600);
+      }
+    }
+
+    // Instantiation
+    let gameHub;
+    window.addEventListener("DOMContentLoaded", () => {
+      gameHub = new EduPlayHub();
+    });
+  </script>
+</body>
+</html>
